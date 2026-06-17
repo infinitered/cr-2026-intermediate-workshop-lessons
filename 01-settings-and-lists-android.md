@@ -1,4 +1,4 @@
-# Module 01: Expo UI Seasoning -  opportunistic native components and lists
+# Module 01: Expo UI Seasoning -  opportunistic native components and lists (Android edition)
 
 ### Goal
 
@@ -160,21 +160,6 @@ Now let's add these sections. We'll try a variety of controls here, but they all
 > What's missing? Oh yeah, styles! You really don't need any!
 
 🏃**Try it.** It should be a form, that's it!
-
-### Subheading
-
-Blah Blah
-
-```
-code sample
-```
-
-<details>
-  <summary>expanding code sample</summary>
-
-</details>
-
-🏃**Try it.** Open up the app after changing the settings. How well can you navigate around? Log in (if not already), scroll down on the lists, switch tabs.
 
 ## Exercise 2: Lists 101
 
