@@ -135,7 +135,11 @@ We're ignoring the birth date field because there's no date picker in the uinver
     <Text>{`Minimum Rating: ${minRating} / 5`}</Text>
     <Slider value={minRating} onValueChange={setMinRating} min={1} max={5} step={1} />
   </Column>
-  <Button label="Favorite Genres" onPress={() => router.push("/favorite-genres")} />
+  <Button
+    variant="text"
+    label="Set Favorite Genres"
+    onPress={() => router.push("/favorite-genres")}
+  />
 </FieldGroup.Section>
 ```
 
@@ -296,7 +300,197 @@ Android's date picker is really just a dialog, so our major customization here w
 
 ## Exercise 3: Drop down to a better drop down
 
+The State field is currently a text box, but there's only 50 states, so that could definitely be a picker control of some sort.
 
+Like with the date picker, we'll implement our own this time. And lke the date picker, there's a little more elbow grease to apply this time.
+
+1. In the **app/components** folder, let's create our platform-specific files (we only need them and not the fallback since we're not targeting web). These will be: **Dropdown.android.tsx** and **Dropdown.ios.tsx**.
+
+2. Both files have the same basic boilerplate, add this to both:
+
+```tsx
+type DatePickerProps = {
+  title: string
+  value: Date
+  onDateChange: (date: Date) => void
+  maximumDate?: Date
+}
+
+export function DatePicker({ title, value, onDateChange, maximumDate }: DatePickerProps) {
+
+}
+```
+
+### iOS dropdown
+
+We'll be using the Swift UI Picker. This is essentially what you also get in the universal component library, but there's more options available.
+
+1. Import the following into **Dropdown.ios.tsx**:
+
+```tsx
+import { Picker, Text } from "@expo/ui/swift-ui"
+import { pickerStyle, tag } from "@expo/ui/swift-ui/modifiers"
+```
+
+2. Let's return the empty picker:
+
+```tsx
+<Picker
+  label={title}
+  selection={selectedValue}
+  onSelectionChange={(v) => onValueChange(v as string)}
+  modifiers={[pickerStyle("menu")]}
+>
+{/* items go here*/}
+</Picker>
+```
+
+3. Fun fact about the SwiftUI picker - you can style the contents however you'd like! You really just are rendering a list of items inside the picker. We'll use the normal text here:
+
+```diff
+<Picker
+  label={title}
+  selection={selectedValue}
+  onSelectionChange={(v) => onValueChange(v as string)}
+  modifiers={[pickerStyle("menu")]}
++  {items.map((item) => (
++    <Text key={item.value} modifiers={[tag(item.value)]}>
++     {item.label}
++   </Text>
+  ))}
+</Picker>
+```
+
+The tag is what the `Picker` uses to determine what to display when the picker is closed.
+
+4. We're missing the empty state. We'll add one `Text` above, tagged with the empty string:
+
+```diff
+<Picker
+  label={title}
+  selection={selectedValue}
+  onSelectionChange={(v) => onValueChange(v as string)}
+  modifiers={[pickerStyle("menu")]}
+>
++  <Text modifiers={[tag("")]}>Select...</Text>
+  {items.map((item) => (
+    <Text key={item.value} modifiers={[tag(item.value)]}>
+      {item.label}
+    </Text>
+  ))}
+</Picker>
+```
+
+🏃**Try it.** Should look alright!
+
+### Android dropdown
+
+For Android, we're using the `ExposedDropdownMenuBox`, and you have _a lot_ of control over this thing. You're going to define what it looks like when closed, what the entire open menu looks like, and what indicates if it's open or not.
+
+1. Start with some imports. We'll need... a few:
+
+```tsx
+import {
+  ExposedDropdownMenuBox,
+  ExposedDropdownMenu,
+  DropdownMenuItem,
+  BasicTextField,
+  Text,
+  useNativeState,
+  Row,
+  Icon,
+  Box,
+} from "@expo/ui/jetpack-compose"
+import { fillMaxWidth, menuAnchor } from "@expo/ui/jetpack-compose/modifiers"
+```
+
+2. Add this little hook at the top of the function, since we already know we need to control the expanded status:
+
+```tsx
+const [expanded, setExpanded] = useState(false)
+```
+
+3. Here's the basic scaffolding:
+
+```tsx
+<ExposedDropdownMenuBox expanded={expanded} onExpandedChange={setExpanded}>
+  <ExposedDropdownMenu expanded={expanded} onDismissRequest={() => setExpanded(false)}>
+  </ExposedDropdownMenu>
+</ExposedDropdownMenuBox>
+```
+
+`ExposedDropdownMenuBox` will contain what's displayed in the closed state. `ExposedDropdownMenu` will contain the individual items in the list.
+
+4. We'll add a basic `BasicTextField` here for now, making it read only. Add this inside `ExposedDropdownMenuBox` just before `ExposedDropdownMenu`
+
+```tsx
+<BasicTextField
+  key={selectedValue}
+  readOnly
+  modifiers={[menuAnchor(), fillMaxWidth()]}
+>
+```
+
+5. Add all of the items inside `ExposedDropdownMenu`:
+
+```tsx
+{items.map((item) => (
+  <DropdownMenuItem
+    key={item.value}
+    onClick={() => {
+      onValueChange(item.value)
+      setExpanded(false)
+    }}
+  >
+    <DropdownMenuItem.Text>
+      <Text>{item.label}</Text>
+    </DropdownMenuItem.Text>
+  </DropdownMenuItem>
+))}
+```
+
+🏃**Try it.** It should behave like a dropdown, but it doesn't quite look the part yet, since it's blank.
+
+#### A word about native state
+
+State works a little differently with platform native components. Namely, there's two-way data binding on the value itself. It's not really reactive, like React. So, we have a `useNativeState` hook. You can pass this to the `value` field of a `TextField` or another control, and it will implement two-way data binding, so that native state variable is always up to date. And if you need to update the native state from outside of the component, you can set the state variable directly. 
+
+We don't need this for actual keeping of user input. We need it to set the value of the `BasicTextField`. So, we're going to set it up to update native state with the label that should be shown in the `BasicTextField`. It's also a little complicated because we don't want to expose native state outside of this component. We want everything to go through `selectedValue` and on `onValueChange`.
+
+6. First, add a little helper callback to the component to calculate what the display value should be:
+
+```tsx
+const getLabelFromSelectedValue = useCallback(() => {
+  return items.find((item) => item.value === selectedValue)?.label ?? ""
+}, [items, selectedValue])
+```
+
+7. Now, initialize native state with the current (initial) label. This covers cases like the form rendering with a value already set:
+
+```tsx
+const selectedValueNativeState = useNativeState(getLabelFromSelectedValue())
+```
+
+8. Create a `useEffect` hook to update native state whenever `selectedValue` is changed:
+
+```tsx
+useEffect(() => {
+  selectedValueNativeState.set(getLabelFromSelectedValue())
+}, [selectedValue, selectedValueNativeState, getLabelFromSelectedValue, items])
+```
+
+9. Bind the value to the text input
+
+```diff
+BasicTextField
++  value={selectedValueNativeState}
+  key={selectedValue}
+  readOnly
+  modifiers={[menuAnchor(), fillMaxWidth()]}
+>
+```
+
+🏃**Try it.** Maybe even try clearing app storage to reset the form to the empty state. It should work!
 
 ```
 code sample
@@ -307,7 +501,42 @@ code sample
 
 </details>
 
-🏃**Try it.** Open up the app after changing the settings. How well can you navigate around? Log in (if not already), scroll down on the lists, switch tabs.
+🏃**Try it.** Open up the app after changing the settings. How well can you navigate around? Log in (if not already), scroll down on the lists, switch tabs. But it's still missing something...
+
+#### Find that caret!
+
+The dropdown doesn't look any different from the other fields at this point. That's... not great. There's no one type of dropdown in Jetpack compose, but a popular thing to do (at least it's the top google result) is to add the caret icon to the right.
+
+Let's use the `Icon` component and some material icons to fix this.
+
+1. Import our icons:
+
+```tsx
+import ArrowUpward from "@expo/material-symbols/arrow_drop_up.xml"
+import ArrowDownward from "@expo/material-symbols/arrow_drop_down.xml"
+```
+
+2. Add this code inside the `BasicTextField`:
+
+```tsx
+<BasicTextField.DecorationBox>
+  <Row
+    verticalAlignment="center"
+    horizontalArrangement="spaceBetween"
+    modifiers={[fillMaxWidth()]}
+  >
+    <Box>
+      <BasicTextField.Placeholder>
+        <Text>{title}</Text>
+      </BasicTextField.Placeholder>
+      <BasicTextField.InnerTextField />
+    </Box>
+    {expanded ? <Icon source={ArrowUpward} /> : <Icon source={ArrowDownward} />}
+  </Row>
+</BasicTextField.DecorationBox>
+```
+
+🏃**Try it.** It's starting to look like a real dropdown!
 
 ## Side Quests
 
