@@ -21,8 +21,8 @@ TODO: add a little description for all the new Expo UI components used.
 
 ### Resources
 
-- React Native docs
-  - [Expo UI universal controls](https://docs.expo.dev/versions/latest/sdk/ui/universal/)
+- [React Native docs](https://reactnative.dev/docs/0.85/components-and-apis)
+- [Expo UI universal controls](https://docs.expo.dev/versions/latest/sdk/ui/universal/)
 
 # Exercises
 
@@ -41,7 +41,7 @@ The universal components in @expo/ui are a single-API layer over the platform-na
 1. You can go ahead delete everything inside of `<Screen>` inside of **app/screens/SettingScreen**. You won't need it anymore.
 
 ```tsx
-<Screen preset="fixed" contentContainerStyle={$screenContent}>
+<Screen preset="fixed" contentContainerStyle={{ flex: 1 }}>
    { /* It's gone! */ }
 </Screen>
 ```
@@ -56,7 +56,7 @@ Add the host inside of screen, and the field group (all the controls go inside t
 
 ```diff
 <Screen preset="fixed" contentContainerStyle={$screenContent}>
-+   <Host style={{ flex: 1 }} useViewportSizeMeasurement>
++   <Host style={{ flex: 1 }}>
 +      <FieldGroup>
 
 +      </FieldGroup>
@@ -82,7 +82,7 @@ We'll go group by group, ignoring controls that we can't port over yet.
   </FieldGroup.Section>
 ```
 
-We're ignoring the birth date field because there's no date picker in the uinversal controls - we'll be back!
+We're ignoring the birth date field because there's no date picker in the universal controls - we'll be back!
 
 2. Now the shipping address group:
 
@@ -147,7 +147,7 @@ We're ignoring the birth date field because there's no date picker in the uinver
 
 ## Exercise 2: DatePicker Story
 
-There is no date picker in the univeral component library. Therefore, we'll make our own "universal" component that we'll then import into the Settings screen and use it inline with the rest of the univeral components.
+There is no date picker in the universal component library. Therefore, we'll make our own "universal" component that we'll then import into the Settings screen and use it inline with the rest of the universal components.
 
 The universal components under the hood use platform-specific file extensions to create distinct Android, iOS, and web components that can be imported into other files as a single universal component, e.g.,:
 
@@ -234,8 +234,11 @@ Android's date picker is really just a dialog, so our major customization here w
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   })
 ```
+
+> Note: Why `timeZone` is set to UTC you might ask? Compose's `DatePickerDialog` works in UTC, where JS is in local time. This helps avoid off by one errors. Comment it out and see the difference!
 
 🏃**Try it.** Android doesn't crash now! But you can't pick a date, either:
 
@@ -309,15 +312,15 @@ Like with the date picker, we'll implement our own this time. And lke the date p
 2. Both files have the same basic boilerplate, add this to both:
 
 ```tsx
-type DatePickerProps = {
+type DropdownProps = {
   title: string
-  value: Date
-  onDateChange: (date: Date) => void
-  maximumDate?: Date
+  selectedValue: string
+  onValueChange: (value: string) => void
+  items: { label: string; value: string }[]
 }
 
-export function DatePicker({ title, value, onDateChange, maximumDate }: DatePickerProps) {
-
+export function Dropdown({ title, selectedValue, onValueChange, items }: DropdownProps) {
+  return null
 }
 ```
 
@@ -381,7 +384,7 @@ The tag is what the `Picker` uses to determine what to display when the picker i
 </Picker>
 ```
 
-🏃**Try it.** Should look alright!
+🏃**Try it.** Import the `Dropdown` component over in `SettingsScreen` and wire up the items via the `US_STATES` constants found in `@/utils/usStates`. Should look alright!
 
 ### Android dropdown
 
@@ -490,22 +493,11 @@ BasicTextField
 >
 ```
 
-🏃**Try it.** Maybe even try clearing app storage to reset the form to the empty state. It should work!
-
-```
-code sample
-```
-
-<details>
-  <summary>expanding code sample</summary>
-
-</details>
-
-🏃**Try it.** Open up the app after changing the settings. How well can you navigate around? Log in (if not already), scroll down on the lists, switch tabs. But it's still missing something...
+🏃**Try it.** Open up the app after changing the settings. How well can you interact with the form? But it's still missing something...
 
 #### Find that caret!
 
-The dropdown doesn't look any different from the other fields at this point. That's... not great. There's no one type of dropdown in Jetpack compose, but a popular thing to do (at least it's the top google result) is to add the caret icon to the right.
+The dropdown doesn't look any different from the other fields at this point. That's... not great. There's no one type of dropdown in Jetpack compose, but a popular thing to do (at least it's the top Google result) is to add the caret icon to the right.
 
 Let's use the `Icon` component and some material icons to fix this.
 
@@ -550,4 +542,4 @@ Suggestions:
 
 ## See the solution
 
-Switch to branch: [`01-blending-in-solution`](https://github.com/infinitered/cr-2024-intermediate-workshop-template/tree/01-blending-in-solution)
+Switch to branch: [`01-settings`](https://github.com/infinitered/cr-2026-intermediate-workshop-template/tree/01-settings)
