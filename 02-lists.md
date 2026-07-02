@@ -344,6 +344,7 @@ Then update the List modifier to use the state:
   <RNHostView matchContents>
     <ExpoImage source={game.background_image} style={$thumbnail} />
   </RNHostView>
+) : null
 }
 ```
 
@@ -405,14 +406,38 @@ footer={
 
 ### Android
 
+Since Android lists don't have the same swipe to delete and sorting functionality, we will focus on a cosmetic upgrade, using standard Jetpack Compose and Material icons.
+
 1. Create the **app/screens/QueueScreen.android.tsx** file. Use this as the starting template (this is just the imports and the hooks that we need to keep around), along with the `Host` wrapper required for Expo UI components:
 
 ```tsx
+import { Image as ExpoImage } from "expo-image"
+import { router } from "expo-router"
+import ArrowDownward from "@expo/material-symbols/arrow_downward.xml"
+import ArrowUpward from "@expo/material-symbols/arrow_upward.xml"
+import Cancel from "@expo/material-symbols/cancel.xml"
+import {
+  Host,
+  LazyColumn,
+  ElevatedCard,
+  Button,
+  Row,
+  HorizontalDivider,
+  Icon,
+  IconButton,
+  Text as ComposeText,
+  RNHostView,
+  useMaterialColors,
+} from "@expo/ui/jetpack-compose"
+import { clickable, fillMaxWidth, padding, size, weight } from "@expo/ui/jetpack-compose/modifiers"
+import { useAppTheme } from "@/theme/context"
 
 import { useQueueService } from "@/services/queueService"
 
 export function QueueScreen() {
   const { queuedGames, availableGames, isLoading, chooseNextGame, removeFromQueue, moveInQueue } = useQueueService()
+
+  const theme = useAppTheme()
 
     if (isLoading) {
       return <LoadingScreen />
@@ -425,21 +450,129 @@ export function QueueScreen() {
 
 ```
 
+2. You might not expect it, but the name of the Android list component is `LazyColumn`. Let's scaffold out a basic list. Add this inside host:
 
-### Subheading
+```tsx
+<LazyColumn contentPadding={{ start: 16, end: 16, bottom: 24 }}>
+  {queuedGames.map((game, index) => (
+    <QueueCard key={game.id} game={game} index={index} total={queuedGames.length} />
+  ))}
 
-Blah Blah
+  <HorizontalDivider modifiers={[padding(0, 16, 0, 8)]} />
 
+  <Button onClick={chooseNextGame} modifiers={[fillMaxWidth()]}>
+    <ComposeText>
+      {availableGames.length > 0 ? "Choose My Next Game" : "All Games Queued!"}
+    </ComposeText>
+  </Button>
+</LazyColumn>
 ```
-code sample
+
+Below the screen component, create the `QueueCard`:
+
+```tsx
+function QueueCard({ game, index, total }: { game: Game; index: number; total: number }) {
+  const isFirst = index === 0
+  const isLast = index === total - 1
+
+  return (
+    <ElevatedCard
+      modifiers={[padding(0, 4, 0, 4)]}
+    >
+      <Row
+        verticalAlignment="center"
+        horizontalArrangement={{ spacedBy: 12 }}
+        modifiers={[fillMaxWidth(), padding(16, 12, 16, 12)]}
+      >
+        <ComposeText style={{ typography: "titleSmall" }}>{String(index + 1)}</ComposeText>
+        <ComposeText style={{ typography: "bodyMedium" }} modifiers={[weight(1)]}>
+          {game.name}
+        </ComposeText>
+      </Row>
+    </ElevatedCard>
+  )
+}
 ```
 
-<details>
-  <summary>expanding code sample</summary>
+That should get us a basic layout. Now we'll add more visuals and functionality back.
 
-</details>
+3. Just like with the iOS version, let's use an `RNHostView` to include the game image. Add this directly after the sequence number:
 
-🏃**Try it.** Open up the app after changing the settings. How well can you navigate around? Log in (if not already), scroll down on the lists, switch tabs.
+```tsx
+{game.background_image ? (
+  <RNHostView matchContents>
+    <ExpoImage source={game.background_image} style={$thumbnail} />
+  </RNHostView>
+) : null}
+```
+
+4. Let's make the whole thing pressable, showing you the game details on tap:
+
+```diff
+<ElevatedCard
+-  modifiers={[padding(0, 4, 0, 4)]}
++  modifiers={[padding(0, 4, 0, 4), clickable(() => router.push(`/game/${game.id}`))]}
+>
+```
+
+5. Add some icons for the sorting and delete operations after the game title:
+
+```tsx
+<IconButton
+  onClick={() => moveInQueue(game.id, "up")}
+  enabled={!isFirst}
+  modifiers={[size(28, 28)]}
+>
+  <Icon source={ArrowUpward} size={20} />
+</IconButton>
+<IconButton
+  onClick={() => moveInQueue(game.id, "down")}
+  enabled={!isLast}
+  modifiers={[size(28, 28)]}
+>
+  <Icon source={ArrowDownward} size={20} />
+</IconButton>
+<IconButton onClick={() => removeFromQueue(game.id)} modifiers={[size(28, 28)]}>
+  <Icon source={Cancel} size={20} />
+</IconButton>
+```
+
+🏃**Try it.** It should look a lot like the old screen, but with an Android platform-native twist, and should work the same as well.
+
+#### What about the colors?
+
+The colors of the components might not make a lot of sense yet. They're actually based on the theme set on the operating system in Android 12+.
+
+1. Let's try changing the theme to see what happens. Go to Settings -> Wallpaper & Style, and then change the theme colors. See how it affects the colors on this screen.
+
+2. We can let Jetpack Compose set the colors automatically for all components based on a seed color. There's probably no perfect option based on our current theme, but let's try one:
+
+```diff
+<Host
+  style={{ flex: 1 }}
+  colorScheme={isDarkMode ? "dark" : "light"}
++  seedColor={theme.colors.brandSurface}
+>
+```
+
+3. The delete button should probably be red...right? Let's use the standard material error red for this.
+
+Add the `useMaterialColors` hook:
+
+```tsx
+const materialColors = useMaterialColors()
+```
+
+Set the theme for the color of the icon button:
+
+```diff
+<IconButton onClick={() => removeFromQueue(game.id)} modifiers={[size(28, 28)]}>
+-  <Icon source={Cancel} size={20} />
++  <Icon source={Cancel} size={20} tint={materialColors.error }/>
+</IconButton>
+```
+
+🏃**Try it.** The seed color probably isn't ideal, and you might wonder if we'd be better off embracing the user's chosen theme colors. We'll come back to this later!
 
 ## Side Quests
 
