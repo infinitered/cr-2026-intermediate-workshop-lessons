@@ -1,8 +1,8 @@
-# Module 01: Expo UI Seasoning -  opportunistic native components and lists
+# Module 02: Expo UI Seasoning - making lists native
 
 ### Goal
 
-Let's use Expo UI in some ancillary screens, where we can basically adopt platform standard native component layouts without much customization.
+Expo UI lets you tap into all those micro-interactions that come with platform-native controls (especially when it comes to SwiftUI). Let's overhaul some screens with lists to show how to balance your unique design with the introduction of platform-native components that espouse the design sensibilities of the OS itself.
 
 ### Concepts
 
@@ -22,12 +22,409 @@ Let's use Expo UI in some ancillary screens, where we can basically adopt platfo
 # Exercises
 
 ## Exercise 0: Build the app (if you haven't already)
+
 1. `yarn`
 2. `npx expo run:ios` or `npx expo run:android`
 
-## Exercise 1: Something something
+## Exercise 1: A simple list: the favorite genres screen (iOS)
 
-Blah blah
+iOS especially has strong opinions about lists and especially actions you can take on list items, like deleting or sorting them. Let's use this to make a favorite genres selector screen that has a much more native user experience.
+
+1. Create the **app/screens/FavoriteGenresScreen.ios.tsx** file. Use this as the starting template (this is just the imports and the hooks that we need to keep around), along with the `Host` wrapper required for Expo UI components:
+
+```tsx
+import { LoadingScreen } from "@/components/LoadingScreen";
+
+import type { FeedGenre } from "@/services/api/games";
+import { useFavoriteGenresService } from "@/services/favoriteGenresService";
+
+import {
+  Host,
+  List,
+  Section,
+  Label,
+  Image,
+  LabeledContent,
+} from "@expo/ui/swift-ui";
+import {
+  environment,
+  tag,
+  onTapGesture,
+  moveDisabled,
+} from "@expo/ui/swift-ui/modifiers";
+
+export function FavoriteGenresScreen() {
+  const { favoriteGenres, otherGenres, isLoading, isFavorite, toggleFavorite } =
+    useFavoriteGenresService();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  return <Host style={{ flex: 1 }}></Host>;
+}
+```
+
+2. Something cool about Swift UI lists is that everything inside of `List` is inside of the list, but different elements can have different interactiosn. Since our list has separate sections of favorited and available genres, we're going to make those separate sections. Add this inside `Host`:
+
+```tsx
+<List modifiers={[environment("editMode", "active")]}>
+  <Section title="Your Favorites">
+    <List.ForEach>
+      {favoriteGenres.map((genre) => (
+        <Label key={genre.id} title={genre.name} modifiers={[tag(genre.id)]} />
+      ))}
+    </List.ForEach>
+  </Section>
+  <Section title="Available Genres">
+    {otherGenres.map((genre) => (
+      <LabeledContent
+        key={genre.id}
+        label={genre.name}
+        modifiers={[tag(genre.id)]}
+      >
+        <Image
+          systemName="plus.circle"
+          size={22}
+        />
+      </LabeledContent>
+    ))}
+  </Section>
+</List>
+```
+
+3. It should start to look like how we want it to look. Let's add some interactions, namely adding and removing favorites:
+
+```diff
++<List.ForEach onDelete={(indices) => { indicies.forEach(indice => toggleFavorite(indice)); }}>
+-<List.ForEach>
+  {favoriteGenres.map((genre) => (
+    <Label
+      key={genre.id}
+      title={genre.name}
+      modifiers={[tag(genre.id)]}
+    />
+  ))}
+</List.ForEach>
+</Section>
+<Section title="Available Genres">
+  {otherGenres.map((genre) => (
+    <LabeledContent
+      key={genre.id}
+      label={genre.name}
++      modifiers={[tag(genre.id), onTapGesture(() => toggleFavorite(genre.id))]}
+-      modifiers={[tag(genre.id)]}
+    >
+      <Image systemName="plus.circle" size={22} />
+    </LabeledContent>
+  ))}
+</Section>
+```
+
+🏃**Try it.** Adding and removing genres should work! Removing might be a little confusing since you have to swipe and there's no confirmation.
+
+Let's improve the delete interaction by making it a little more obvious. Swift UI lists support different modes, including an edit mode which brings deletion and other interactions front-and-center. You might be familiar with being in a list in iOS, choosing to "edit", and then controls for deletion, sort, and multi-select appear.
+
+4. Update your code to support edit mode:
+
+```diff
+<Host style={$host}>
+- <List>
++  <List modifiers={[environment("editMode", "active")]}>
+    <Section title="Your Favorites">
+```
+
+5. Now deletion has the icon you can tap on the left as well as the confirmation step. But it also has sort handles, which we don't need here. Let's remove that with a modifier:
+
+```diff
+<List.ForEach onDelete={handleDelete}>
+  {favoriteGenres.map((genre) => (
+    <Label
+      key={genre.id}
+      title={genre.name}
+-      modifiers={[tag(genre.id)]}
++.     modifiers={[tag(genre.id), moveDisabled(true)]}
+    />
+  ))}
+</List.ForEach>
+```
+
+That should take care of the sort handles.
+
+6. Just for run, let's add multi-select, so you can see all that edit mode can do:
+
+```diff
+- <List modifiers={[environment("editMode", "active")]}>
++ <List modifiers={[environment("editMode", "active")]} selection={[]}>
+```
+
+If you were actually adding selection, you would pass in a list of indices and also implement event handlers, but just setting the prop is enough to turn on the UI element.
+
+7. Remove that `selection` prop. We don't need it!
+
+8. For finishing touches, you can add an empty state for the favorites section:
+
+```diff
+<Section title="Your Favorites">
++  {favoriteGenres.length === 0 ? (
++    <Label
++      title="Add genres below to personalize recommendations"
++      systemImage="info.circle"
++   />
++  ) : (
+    <List.ForEach onDelete={handleDelete}>
+      {favoriteGenres.map((genre) => (
+        <Label
+          key={genre.id}
+          title={genre.name}
+          modifiers={[tag(genre.id), moveDisabled(true)]}
+        />
+      ))}
+    </List.ForEach>
++  )}
+
+```
+
+🏃**Try it.** I think we've covered our bases!
+
+### What about Android?
+
+Jetpack Compose doesn't have as much built-in to offer here other than syncing up some icons and container styles with Material Design. If you have time for this, check out the Side Quests section below.
+
+## Exercise 2: Lists with custom elements: the queue screen
+
+Once again, there's more fun to be had here with iOS, but we'll be styling both versions of the Queue screen this time.
+
+### iOS
+
+1. Create the **app/screens/QueueScreen.ios.tsx** file. Use this as the starting template (this is just the imports and the hooks that we need to keep around), along with the `Host` wrapper required for Expo UI components:
+
+```tsx
+import { LoadingScreen } from "@/components/LoadingScreen"
+import { Image as ExpoImage } from "expo-image"
+import { router, Stack } from "expo-router"
+import {
+  Host,
+  List,
+  Section,
+  Button,
+  HStack,
+  VStack,
+  Image,
+  Text as SwiftText,
+  RNHostView,
+} from "@expo/ui/swift-ui"
+import {
+  environment,
+  tag,
+  onTapGesture,
+  contentShape,
+  shapes,
+  badge,
+  foregroundStyle,
+  font,
+} from "@expo/ui/swift-ui/modifiers"
+import { useQueueService } from "@/services/queueService"
+
+export function QueueScreen() {
+  const { queuedGames, availableGames, isLoading, chooseNextGame, removeFromQueue, moveInQueue } = useQueueService()
+
+    if (isLoading) {
+      return <LoadingScreen />
+    }
+
+  return {
+    <Host style={{ flex: 1}}></Host>
+  }
+}
+```
+
+2. Let's start out with a basic list along with the button to choose the next game. We're going to back away from some of our custom styling for a moment so we can get the basic interactions right, just adding the needed text and structure. Add this inside of `Host`:
+
+```tsx
+<List>
+  <List.ForEach onDelete={handleDelete} onMove={handleMove}>
+  {queuedGames.map((game, index) => (
+    <HStack
+      key={game.id}
+      spacing={12}
+      alignment="center"
+      />
+      <SwiftText
+        modifiers={[
+          foregroundStyle({ type: "hierarchical", style: "secondary" }),
+          font({ weight: "bold", size: 12 }),
+        ]}
+      >
+        {String(index + 1)}
+      </SwiftText>
+      <VStack>
+      <VStack alignment="leading" spacing={2}>
+        <SwiftText modifiers={[font({ weight: "semibold" })]}>{game.name}</SwiftText>
+        {game.genres && game.genres.length > 0 ? (
+          <SwiftText
+            modifiers={[
+              font({ size: 12 }),
+              foregroundStyle({ type: "hierarchical", style: "secondary" }),
+            ]}
+          >
+            {game.genres.map((g) => g.name).join(", ")}
+          </SwiftText>
+        ) : null}
+      </VStack>
+    </HStack>
+  ))}
+</List.ForEach>
+```
+
+This might look like a lot to unpack, but it's pretty straightforward. `HStack` lays out children horizontally, `VStack` lays them out vertically. Combined with text components, we used this to put the queue position on the left and the title and genres stacked on top of each other to the right.
+
+🏃**Try it.** The text of each row should look about right. Try to hold and drag, and swipe and then delete. These should work, too.
+
+3. The built-in sorting and deleting features are fine, but it can be nice to have a dedicated edit mode to make this functionality more front-and-center. Let's try turning on the SwiftUI list edit mode on to see how it works.
+
+```diff
+-<List>
++<List modifiers={[environment("editMode", "active")]}>
+```
+
+🏃**Try it.** Nice editing controls! Love those drag handles!
+
+4. OK, but we don't want edit mode on all the time. Let's make it conditional. Let's add state to track edit mode:
+
+```tsx
+const [editMode, setEditMode] = useState(false)
+
+const handleToggleEdit = () => {
+  setEditMode((prev) => {
+    return !prev
+  })
+}
+```
+
+Then update the List modifier to use the state:
+
+```diff
+-<List modifiers={[environment("editMode", "active")]}>
++<List modifiers={[environment("editMode", editMode ? "active" : "inactive")]}>
+```
+
+5. But we need some button to change the state. There might be better options later, but for now we'll put a button in the navigation header. [This layout in the Apple SwiftUI documentation](https://developer.apple.com/documentation/swiftui/editbutton) would be nice but we're not quite there yet with the rest of the UI, so let's do something close to that by putting an edit button in the top right:
+
+```diff
+<Section
++  header={
++    <HStack>
++      <Spacer />
++      <Button
++        label={editMode ? "Done" : "Edit"}
++        onPress={() => setEditMode((prev) => !prev)}
++      />
++    </HStack>
+  }
+```
+
+6. Now that we have edit mode wired up, let's put back the button for randomly choosing the next game. It'll make it easier for us to test things. Add this just inside the `List`, below the `Section`:
+
+```tsx
+{!editMode ? (
+  <Section>
+    <Button
+      label={availableGames.length > 0 ? "Choose My Next Game" : "All Games Queued!"}
+      onPress={chooseNextGame}
+    />
+  </Section>
+) : null}
+```
+
+7. Now we'll bring back the game thumbnail. We want to use `expo-image`, but that's not an Expo UI component. So, we'll use an `RNHostView`, which allows us to embed React Native components within Expo UI components. Add this below the `SwiftText` component for displaying the number for the position in the queue:
+
+```tsx
+{game.background_image ? (
+  <RNHostView matchContents>
+    <ExpoImage source={game.background_image} style={$thumbnail} />
+  </RNHostView>
+}
+```
+
+🏃**Try it.** Should have all the elements it had before.
+
+#### Finishing touches
+
+Our queue should show the games that will be shipped to us next. Let's use modifiers to add some context there.
+
+1. Define a `SHIPMENT_SIZE` constant at the top of the file:
+
+```tsx
+const SHIPMENT_SIZE=3
+```
+
+2. Add the tag modifier to the `HStack`:
+
+```diff
+<HStack
+  key={game.id}
+  spacing={12}
+  alignment="center"
+  modifiers={[
+    tag(game.id),
++    ...(index < SHIPMENT_SIZE ? [badge("Next")] : []),
+    onTapGesture(() => {
+      if (!editMode) router.push(`/game/${game.id}`)
+    }),
+  ]}
+>
+```
+
+3. While we're in there, you should be able to view the game from this screen. Add a tap gesture modifier:
+
+```diff
+<HStack
+  key={game.id}
+  spacing={12}
+  alignment="center"
+  modifiers={[
+    tag(game.id),
+    ...(index < SHIPMENT_SIZE ? [badge("Next")] : []),
++    onTapGesture(() => {
++      if (!editMode) router.push(`/game/${game.id}`)
++    }),
+  ]}
+>
+```
+
+4. Also add a footer to tell users what the "Next" badge means. Add this property to the top `Section`:
+
+```tsx
+footer={
+  <SwiftText>The first {SHIPMENT_SIZE} games will be in your next delivery!</SwiftText>
+}
+```
+
+🏃**Try it.** The Next tag should show on the intended list items as you move things around, and how you can view the full game page from the queue, as well.
+
+### Android
+
+1. Create the **app/screens/QueueScreen.android.tsx** file. Use this as the starting template (this is just the imports and the hooks that we need to keep around), along with the `Host` wrapper required for Expo UI components:
+
+```tsx
+
+import { useQueueService } from "@/services/queueService"
+
+export function QueueScreen() {
+  const { queuedGames, availableGames, isLoading, chooseNextGame, removeFromQueue, moveInQueue } = useQueueService()
+
+    if (isLoading) {
+      return <LoadingScreen />
+    }
+
+  return {
+    <Host style={{ flex: 1}}></Host>
+  }
+}
+
+```
+
 
 ### Subheading
 
@@ -46,8 +443,9 @@ code sample
 
 ## Side Quests
 
-- ???
-- ???
+## Style sync-up for Android on the favorite genres screen
+
+TBD
 
 ## See the solution
 
