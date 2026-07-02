@@ -16,15 +16,9 @@ Expo UI lets you tap into all those micro-interactions that come with platform-n
 
 ### Resources
 
-- React Native docs
-  - [blahblah](https://reactnative.dev/docs/text#allowfontscaling)
+TBD
 
 # Exercises
-
-## Exercise 0: Build the app (if you haven't already)
-
-1. `yarn`
-2. `npx expo run:ios` or `npx expo run:android`
 
 ## Exercise 1: A simple list: the favorite genres screen (iOS)
 
