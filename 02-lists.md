@@ -572,7 +572,127 @@ Set the theme for the color of the icon button:
 
 ## Style sync-up for Android on the favorite genres screen
 
-TBD
+Let's do something to make that Favorite Genres screen a little more Jetpack-composey, even though they'res not much special we can do there. We'll use `ListItem` to experiment with the standardized controls for making items in lists, typical in things like settings menus.
+
+1. Create a new **FavoriteGenres.android.tsx** next to the others. Fill it with some boilerplate:
+
+```tsx
+import { ActivityIndicator } from "react-native"
+import {
+  Host,
+  LazyColumn,
+  ListItem,
+  HorizontalDivider,
+  Text as ComposeText,
+  Icon,
+  IconButton,
+} from "@expo/ui/jetpack-compose"
+import { clickable, padding } from "@expo/ui/jetpack-compose/modifiers"
+
+import { LoadingScreen } from "@/components/LoadingScreen";
+
+import type { FeedGenre } from "@/services/api/games";
+import { useFavoriteGenresService } from "@/services/favoriteGenresService";
+
+export function FavoriteGenresScreen() {
+  if (isLoading) {
+    return (
+      <Screen preset="fixed" contentContainerStyle={$centered}>
+        <ActivityIndicator size="large" color={theme.colors.tint} />
+      </Screen>
+    )
+  }
+
+    return (
+      <Host style={{ flex: 1 }}>
+
+      </Host>
+}
+```
+
+2. Add a `LazyColumn` inside the `Host` and iterate over favorites and non-favorite genres:
+
+```tsx
+<LazyColumn>
+{favoriteGenres.map((genre) => (
+    <ListItem key={genre.id} colors={{ containerColor: "transparent" }}>
+      <ListItem.HeadlineContent>
+        <ComposeText>{genre.name}</ComposeText>
+      </ListItem.HeadlineContent>
+      <ListItem.SupportingContent>
+        <ComposeText>
+          {genre.gameCount} {genre.gameCount === 1 ? "game" : "games"}
+        </ComposeText>
+      </ListItem.SupportingContent>
+      <ListItem.TrailingContent>
+        <IconButton onClick={() => removeFavoriteGenre(genre.id)}>
+          <Icon
+            source={require("../../assets/icons/remove-circle.xml")}
+            tint={theme.colors.error}
+            size={24}
+          />
+        </IconButton>
+      </ListItem.TrailingContent>
+    </ListItem>
+  ))}
+  {otherGenres.map((genre) => (
+    <ListItem
+      key={genre.id}
+      colors={{ containerColor: "transparent" }}
+      modifiers={[clickable(() => addFavoriteGenre(genre.id))]}
+    >
+      <ListItem.HeadlineContent>
+        <ComposeText>{genre.name}</ComposeText>
+      </ListItem.HeadlineContent>
+      <ListItem.SupportingContent>
+        <ComposeText>
+          {genre.gameCount} {genre.gameCount === 1 ? "game" : "games"}
+        </ComposeText>
+      </ListItem.SupportingContent>
+      <ListItem.TrailingContent>
+        <IconButton onClick={() => addFavoriteGenre(genre.id)}>
+          <Icon
+            source={require("../../assets/icons/add-circle.xml")}
+            tint={theme.colors.brandAccent}
+            size={24}
+          />
+        </IconButton>
+      </ListItem.TrailingContent>
+    </ListItem>
+  ))}
+</LazyColumn>
+```
+
+In this case, we're using custom Android XML drawables for the add/remove buttons. The `Icon` component can import them directly; they don't need to be embedded in the native project setup or anything like that.
+
+3. Let's add some titles before each section:
+
+```tsx
+ <ComposeText style={{ typography: "titleMedium" }} modifiers={[padding(0, 16, 0, 8)]}>
+  Your Favorites
+</ComposeText>
+```
+
+```tsx
+<ComposeText style={{ typography: "titleMedium" }} modifiers={[padding(0, 8, 0, 8)]}>
+  Available Genres
+</ComposeText>
+```
+
+4. And a divider between the two sections:
+
+```tsx
+<HorizontalDivider modifiers={[padding(0, 8, 0, 8)]} />
+```
+
+5. Then fix the padding on the list iself so the headers aren't squished up against the edge:
+
+```diff
+-<LazyColumn contentPadding={{ start: 16, end: 16, bottom: 24 }}>
++<LazyColumn contentPadding={{ start: 16, end: 16, bottom: 24 }}>
+```
+
+🏃**Try it.** What other ideas might you have for this screen? Open to suggestions!
 
 ## See the solution
 
