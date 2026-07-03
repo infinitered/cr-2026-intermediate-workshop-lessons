@@ -21,13 +21,13 @@ Let's use Expo Router-specific native UI functionality to adopt modern platform-
 
 # Exercises
 
-## Exercise 0: Build the app (if you haven't already)
-1. `yarn`
-2. `npx expo run:ios` or `npx expo run:android`
+## Exercise 1: Native tabs
 
-## Exercise 1: Something something
+This could actually be one of the first things you do when starting to add more platform native UI to your app. Native tabs are a pretty straightforward replacement for cross-platform JS tabs.
 
-Blah blah
+1. 
+
+
 
 ### Subheading
 
