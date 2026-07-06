@@ -686,4 +686,4 @@ iOS: SF Symbols and the FlatList gallery, unchanged. One `YearSection`, one
 
 ## See the solution
 
-Switch to branch: [`02-composite-ui-solution`](https://github.com/infinitered/cr-2024-intermediate-workshop-template/tree/03-composite-ui)
+Switch to branch: [`03-composite-ui`](https://github.com/infinitered/cr-2026-intermediate-workshop-template/tree/03-composite-ui)
