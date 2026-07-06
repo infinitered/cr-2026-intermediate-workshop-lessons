@@ -46,6 +46,7 @@ import {
   onTapGesture,
   moveDisabled,
 } from "@expo/ui/swift-ui/modifiers";
+import { useState } from "react";
 
 export function FavoriteGenresScreen() {
   const { favoriteGenres, otherGenres, isLoading, isFavorite, toggleFavorite } =
@@ -59,7 +60,7 @@ export function FavoriteGenresScreen() {
 }
 ```
 
-2. Something cool about Swift UI lists is that everything inside of `List` is inside of the list, but different elements can have different interactiosn. Since our list has separate sections of favorited and available genres, we're going to make those separate sections. Add this inside `Host`:
+2. Something cool about Swift UI lists is that everything inside of `List` is inside of the list, but different elements can have different interactions. Since our list has separate sections of favorites and available genres, we're going to make those separate sections. Add this inside `Host`:
 
 ```tsx
 <List modifiers={[environment("editMode", "active")]}>
@@ -90,7 +91,7 @@ export function FavoriteGenresScreen() {
 3. It should start to look like how we want it to look. Let's add some interactions, namely adding and removing favorites:
 
 ```diff
-+<List.ForEach onDelete={(indices) => { indicies.forEach(indice => toggleFavorite(indice)); }}>
++<List.ForEach onDelete={(indices) => { indices.forEach(index => toggleFavorite(favoriteGenres[index].id)); }}>
 -<List.ForEach>
   {favoriteGenres.map((genre) => (
     <Label
@@ -145,7 +146,7 @@ Let's improve the delete interaction by making it a little more obvious. Swift U
 
 That should take care of the sort handles.
 
-6. Just for run, let's add multi-select, so you can see all that edit mode can do:
+6. Just for fun, let's add multi-select, so you can see all that edit mode can do:
 
 ```diff
 - <List modifiers={[environment("editMode", "active")]}>
@@ -227,9 +228,9 @@ export function QueueScreen() {
       return <LoadingScreen />
     }
 
-  return {
+  return (
     <Host style={{ flex: 1}}></Host>
-  }
+  )
 }
 ```
 
@@ -238,37 +239,39 @@ export function QueueScreen() {
 ```tsx
 <List>
   <List.ForEach onDelete={handleDelete} onMove={handleMove}>
-  {queuedGames.map((game, index) => (
-    <HStack
-      key={game.id}
-      spacing={12}
-      alignment="center"
-      />
-      <SwiftText
-        modifiers={[
-          foregroundStyle({ type: "hierarchical", style: "secondary" }),
-          font({ weight: "bold", size: 12 }),
-        ]}
-      >
-        {String(index + 1)}
-      </SwiftText>
-      <VStack>
-      <VStack alignment="leading" spacing={2}>
-        <SwiftText modifiers={[font({ weight: "semibold" })]}>{game.name}</SwiftText>
-        {game.genres && game.genres.length > 0 ? (
+    {queuedGames.map((game, index) => (
+      <HStack
+        key={game.id}
+        spacing={12}
+        alignment="center"
+        >
           <SwiftText
             modifiers={[
-              font({ size: 12 }),
               foregroundStyle({ type: "hierarchical", style: "secondary" }),
+              font({ weight: "bold", size: 12 }),
             ]}
           >
-            {game.genres.map((g) => g.name).join(", ")}
+            {String(index + 1)}
           </SwiftText>
-        ) : null}
-      </VStack>
-    </HStack>
-  ))}
-</List.ForEach>
+          <VStack>
+          <VStack alignment="leading" spacing={2}>
+            <SwiftText modifiers={[font({ weight: "semibold" })]}>{game.name}</SwiftText>
+            {game.genres && game.genres.length > 0 ? (
+              <SwiftText
+                modifiers={[
+                  font({ size: 12 }),
+                  foregroundStyle({ type: "hierarchical", style: "secondary" }),
+                ]}
+              >
+                {game.genres.map((g) => g.name).join(", ")}
+              </SwiftText>
+            ) : null}
+          </VStack>
+        </VStack>
+      </HStack>
+    ))}
+  </List.ForEach>
+</List>
 ```
 
 This might look like a lot to unpack, but it's pretty straightforward. `HStack` lays out children horizontally, `VStack` lays them out vertically. Combined with text components, we used this to put the queue position on the left and the title and genres stacked on top of each other to the right.
