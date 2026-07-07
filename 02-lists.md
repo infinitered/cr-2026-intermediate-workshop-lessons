@@ -205,7 +205,6 @@ import {
   Button,
   HStack,
   VStack,
-  Image,
   Text as SwiftText,
   RNHostView,
 } from "@expo/ui/swift-ui"
@@ -213,12 +212,11 @@ import {
   environment,
   tag,
   onTapGesture,
-  contentShape,
-  shapes,
   badge,
   foregroundStyle,
   font,
 } from "@expo/ui/swift-ui/modifiers"
+import { useState } from "react";
 import { useQueueService } from "@/services/queueService"
 
 export function QueueScreen() {
@@ -431,22 +429,22 @@ import {
   useMaterialColors,
 } from "@expo/ui/jetpack-compose"
 import { clickable, fillMaxWidth, padding, size, weight } from "@expo/ui/jetpack-compose/modifiers"
-import { useAppTheme } from "@/theme/context"
 
 import { useQueueService } from "@/services/queueService"
+import { LoadingScreen } from "@/components/LoadingScreen"
+import type { Game } from "@/services/api/types"
+import { colors } from "@/theme/colors"
 
 export function QueueScreen() {
-  const { queuedGames, availableGames, isLoading, chooseNextGame, removeFromQueue, moveInQueue } = useQueueService()
-
-  const theme = useAppTheme()
+  const { queuedGames, availableGames, isLoading, chooseNextGame } = useQueueService()
 
     if (isLoading) {
       return <LoadingScreen />
     }
 
-  return {
+  return (
     <Host style={{ flex: 1}}></Host>
-  }
+  )
 }
 
 ```
@@ -475,6 +473,7 @@ Below the screen component, create the `QueueCard`:
 function QueueCard({ game, index, total }: { game: Game; index: number; total: number }) {
   const isFirst = index === 0
   const isLast = index === total - 1
+  const { removeFromQueue, moveInQueue } = useQueueService()
 
   return (
     <ElevatedCard
@@ -502,7 +501,14 @@ That should get us a basic layout. Now we'll add more visuals and functionality 
 ```tsx
 {game.background_image ? (
   <RNHostView matchContents>
-    <ExpoImage source={game.background_image} style={$thumbnail} />
+    <ExpoImage
+      source={game.background_image}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 6,
+      }}
+    />
   </RNHostView>
 ) : null}
 ```
@@ -551,8 +557,7 @@ The colors of the components might not make a lot of sense yet. They're actually
 ```diff
 <Host
   style={{ flex: 1 }}
-  colorScheme={isDarkMode ? "dark" : "light"}
-+  seedColor={theme.colors.brandSurface}
++  seedColor={colors.brandSurface}
 >
 ```
 
@@ -595,25 +600,37 @@ import {
   IconButton,
 } from "@expo/ui/jetpack-compose"
 import { clickable, padding } from "@expo/ui/jetpack-compose/modifiers"
+import AddCircle from "@expo/material-symbols/add_circle.xml"
+import Remove from "@expo/material-symbols/remove.xml"
 
-import { LoadingScreen } from "@/components/LoadingScreen";
-
-import type { FeedGenre } from "@/services/api/games";
-import { useFavoriteGenresService } from "@/services/favoriteGenresService";
+import { useFeedGenres, type FeedGenre } from "@/services/api/games"
+import { useFavoriteGenres } from "@/stores/favoriteGenres"
+import { Screen } from "@/components/Screen"
+import { colors } from "@/theme/colors"
 
 export function FavoriteGenresScreen() {
+  const { data: allGenres = [], isLoading } = useFeedGenres()
+  const { ids: favoriteIds, addFavoriteGenre, removeFavoriteGenre } = useFavoriteGenres()
+
   if (isLoading) {
     return (
-      <Screen preset="fixed" contentContainerStyle={$centered}>
+      <Screen preset="fixed" contentContainerStyle={{ flex: 1 }}>
         <ActivityIndicator size="large" color={theme.colors.tint} />
       </Screen>
     )
   }
 
-    return (
-      <Host style={{ flex: 1 }}>
+  const favoriteGenres = favoriteIds
+    .map((id) => allGenres.find((g) => g.id === id))
+    .filter(Boolean) as FeedGenre[]
 
-      </Host>
+  const otherGenres = allGenres.filter((g) => !favoriteIds.includes(g.id))
+
+  return (
+    <Host style={{ flex: 1 }}>
+
+    </Host>
+  )
 }
 ```
 
@@ -634,8 +651,8 @@ export function FavoriteGenresScreen() {
       <ListItem.TrailingContent>
         <IconButton onClick={() => removeFavoriteGenre(genre.id)}>
           <Icon
-            source={require("../../assets/icons/remove-circle.xml")}
-            tint={theme.colors.error}
+            source={Remove}
+            tint={colors.error}
             size={24}
           />
         </IconButton>
@@ -659,8 +676,8 @@ export function FavoriteGenresScreen() {
       <ListItem.TrailingContent>
         <IconButton onClick={() => addFavoriteGenre(genre.id)}>
           <Icon
-            source={require("../../assets/icons/add-circle.xml")}
-            tint={theme.colors.brandAccent}
+            source={AddCircle}
+            tint={colors.brandAccent}
             size={24}
           />
         </IconButton>
@@ -703,4 +720,4 @@ In this case, we're using custom Android XML drawables for the add/remove button
 
 ## See the solution
 
-Switch to branch: [`01-blending-in-solution`](https://github.com/infinitered/cr-2024-intermediate-workshop-template/tree/01-blending-in-solution)
+Switch to branch: [`02-lists`](https://github.com/infinitered/cr-2026-intermediate-workshop-template/tree/02-lists)
