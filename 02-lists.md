@@ -306,7 +306,7 @@ Then update the List modifier to use the state:
 +<List modifiers={[environment("editMode", editMode ? "active" : "inactive")]}>
 ```
 
-5. But we need some button to change the state. There might be better options later, but for now we'll put a button in the navigation header. [This layout in the Apple SwiftUI documentation](https://developer.apple.com/documentation/swiftui/editbutton) would be nice but we're not quite there yet with the rest of the UI, so let's do something close to that by putting an edit button in the top right:
+5. But we need some button to change the state. There might be better options later, but for now we'll put a button in the navigation header. [This layout in the Apple SwiftUI documentation](https://developer.apple.com/documentation/swiftui/editbutton) would be nice but we're not quite there yet with the rest of the UI, so let's do something close to that by putting an edit button in the top right just inside the `<List />` component:
 
 ```diff
 <Section
@@ -339,7 +339,14 @@ Then update the List modifier to use the state:
 ```tsx
 {game.background_image ? (
   <RNHostView matchContents>
-    <ExpoImage source={game.background_image} style={$thumbnail} />
+    <ExpoImage
+      source={game.background_image}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 6,
+      }}
+    />
   </RNHostView>
 ) : null
 }
@@ -364,13 +371,10 @@ const SHIPMENT_SIZE=3
   key={game.id}
   spacing={12}
   alignment="center"
-  modifiers={[
-    tag(game.id),
++  modifiers={[
++    tag(game.id),
 +    ...(index < SHIPMENT_SIZE ? [badge("Next")] : []),
-    onTapGesture(() => {
-      if (!editMode) router.push(`/game/${game.id}`)
-    }),
-  ]}
++  ]}
 >
 ```
 
