@@ -234,38 +234,323 @@ import FilterList from "@expo/material-symbols/filter_list.xml"
 
 ## Exercise 3: Search
 
-Do android first, see how it affects iOS
+Of course, we could always just add a search text input to the Game Feed. But a lot of apps have search functionality that's more built-in to the navigation layer itself. There's a few different ways to add search to our headers and tabs; let's try them.
 
-Then disable the inline search for iOS, do the new tab
+### Search level 1: The header SearchBar
 
-## Exercise 4: More tab tricks
+We have a hunch that we'll like this more on Android than iOS, but it kind of works for both, so let's give it a go.
 
-- minimize on scroll
-- scroll to top
-- built-in keyboard avoidance
+1. Add some search state to **GameFeedScreen.tsx**:
 
-## Exercise 5: Zoom transitions
-
-## Exercise 6: Android colors
-
-### Subheading
-
-Blah Blah
-
+```tsx
+const [searchText, setSearchText] = useState("")
 ```
-code sample
+
+2. We already had a memo function to filter results on the Game Feed; let's incorporate `searchText` into it:
+
+```diff
+const filteredYearGroups = useMemo(() => {
+if (!yearGroups) return yearGroups
+  const hasGenreFilter = genreIds.length > 0
++  const searchFilter = searchText.toLowerCase().trim()
+
++  if (!hasGenreFilter && !searchFilter) return yearGroups
+
+  return yearGroups
+    .map((group) => ({
+      ...group,
+      games: group.games.filter((game) => {
+        if (hasGenreFilter && !game.genres.some((g) => genreIds.includes(g.id))) return false
++        if (searchFilter && !game.name.toLowerCase().includes(searchFilter)) return false
+        return true
+      }),
+    }))
+    .filter((group) => group.games.length > 0)
+-}, [yearGroups, genreIds])
++}, [yearGroups, genreIds, searchText])
 ```
+
+3. Add the `Stack.SearchBar` component right above `Stack.Toolbar`, inside the `<>`:
+
+```tsx
+<Stack.SearchBar
+  placeholder="Search games..."
+  onChangeText={(e) => setSearchText(e.nativeEvent.text)}
+/>
+```
+
+🏃**Try it.**  Check out the search bar in the header on Android. It also shows up on iOS, but below the header.
+
+### Search Level 2: The Search tab
+
+Let's suppose we don't like the way iOS does it and would rather have a separate search tab.
+
+4. Disable the search bar on iOS:
+
+```diff
+-<Stack.SearchBar
+{Platform.OS !== "ios" ? (
+  placeholder="Search games..."
+  onChangeText={(e) => setSearchText(e.nativeEvent.text)}
+-/>
++/>) : null}
+```
+
+5. Add a **search** folder inside **src/app/(tabs)** and create a **_layout.tsx** and an **index.tsx** file inside the folder.
+
+6. Add this code to **_layout.tsx**:
+
+```tsx
+import { Stack } from "expo-router"
+
+export default function Layout() {
+  return <Stack />
+}
+```
+
+7. Add this code to **index.tsx**. We're just implementing a filter-able list of games, nothing we haven't done already. That said, if you have time and the desire, feel free to make your own!
 
 <details>
-  <summary>expanding code sample</summary>
+  <summary>Expand for all the code</summary>
+```tsx
+import { useMemo, useState } from "react"
+import { Image, View } from "react-native"
+import { Stack, useRouter } from "expo-router"
+import {
+  Button,
+  ContentUnavailableView,
+  Host,
+  HStack,
+  List,
+  RNHostView,
+  Text,
+  VStack,
+} from "@expo/ui/swift-ui"
+import { buttonStyle, font, foregroundStyle, listStyle } from "@expo/ui/swift-ui/modifiers"
 
+import { useGamesByYear } from "@/services/api/games"
+import type { Game } from "@/services/api/types"
+
+export default function SearchScreen() {
+  const router = useRouter()
+  const [searchText, setSearchText] = useState("")
+  const { data: yearGroups } = useGamesByYear()
+
+  const allGames = useMemo(() => {
+    if (!yearGroups) return []
+    return yearGroups.flatMap((group) => group.games)
+  }, [yearGroups])
+
+  const filteredGames = useMemo(() => {
+    if (!searchText.trim()) return allGames
+    const query = searchText.toLowerCase()
+    return allGames.filter((game) => game.name.toLowerCase().includes(query))
+  }, [allGames, searchText])
+
+  return (
+    <>
+      <Stack.SearchBar
+        placeholder="Search games..."
+        onChangeText={(e) => setSearchText(e.nativeEvent.text)}
+      />
+      <Host style={{ flex: 1 }}>
+        {filteredGames.length > 0 ? (
+          <List modifiers={[listStyle("plain")]}>
+            {filteredGames.map((game) => (
+              <Button
+                key={game.id}
+                onPress={() => router.push(`/game/${game.id}`)}
+                modifiers={[buttonStyle("plain")]}
+              >
+                <SearchRow game={game} />
+              </Button>
+            ))}
+          </List>
+        ) : (
+          <ContentUnavailableView
+            title={searchText ? "No Results" : "Search for a game"}
+            systemImage={searchText ? "magnifyingglass" : "gamecontroller"}
+            description={
+              searchText ? `No games match "${searchText}"` : "Type to search for games"
+            }
+          />
+        )}
+      </Host>
+    </>
+  )
+}
+
+function SearchRow({ game }: { game: Game }) {
+  return (
+    <HStack spacing={12} alignment="center">
+      <VStack modifiers={[frame({ width: 48, height: 48 }), clipShape("roundedRectangle", 6)]}>
+        <RNHostView>
+          {game.background_image ? (
+            <Image source={{ uri: game.background_image }} style={{ width: 48, height: 48 }} />
+          ) : (
+            <View style={{ width: 48, height: 48, backgroundColor: "#ccc" }} />
+          )}
+        </RNHostView>
+      </VStack>
+      <VStack alignment="leading" spacing={2}>
+        <Text modifiers={[font({ size: 15, weight: "semibold" })]}>{game.name}</Text>
+        <Text
+          modifiers={[
+            font({ size: 12 }),
+            foregroundStyle({ type: "hierarchical", style: "secondary" }),
+          ]}
+        >
+          {game.genres?.map((g) => g.name).join(", ") ?? ""}
+        </Text>
+      </VStack>
+    </HStack>
+  )
+}
+```
 </details>
 
-🏃**Try it.** Open up the app after changing the settings. How well can you navigate around? Log in (if not already), scroll down on the lists, switch tabs.
+8. In **src/app/(tabs)/_layout.tsx**, Add the conditional search tab after the index tab:
+
+```tsx
+<NativeTabs.Trigger name="search" role="search" hidden={Platform.OS !== "ios"}>
+  <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+```
+
+Note the "search" role.
+
+🏃**Try it.** Searching now brings up an entire separate view.
+
+## Exercise 4: Zoom transitions
+
+iOS includes some cool features for doing platform-native shared element transitions. The zoom transition causes a view to morph from one screen to its equivalent size and position on the next screen. It works particularly well for images.
+
+1. Let's first try just adding the zoom transition "source". Go to **app/components/GameCard.tsx** and surround the image with `Link.AppleZoom`:
+
+```diff
+<Link.AppleZoom>
+<!-- TODO: copy from module 3>
+</Link.AppleZoom>
+```
+
+🏃**Try it.** It tries to do something! Interesting...
+
+2. Let's go implement a "zoom target", which gives a hint as to what the source should be transitioning to. Add `Link.AppleZoomTarget` in **app/components/GameDetailScreen.tsx**
+
+```diff
+{game.background_image (
++  <Link.AppleZoomTarget>
+    <Image source={{ uri: game.background_image }} style={$heroImage} blurRadius={3} />
++  </Link.AppleZoomTarget>
+)}
+```
+
+🏃**Try it.** Oof, that doesn't look great.
+
+### Making a zoom-able view
+
+We're going to eventually have the cover image take over the entire top of the screen, for a cool effect that takes over the header. 
+
+3. First, let's fix the image as it is. Remove the blur:
+
+```diff
+{game.background_image (
+  <Link.AppleZoomTarget>
+-    <Image source={{ uri: game.background_image }} style={$heroImage} blurRadius={3} />
++    <Image source={{ uri: game.background_image }} style={$heroImage} blurRadius={3} />
+  </Link.AppleZoomTarget>
+)}
+```
+
+And a small tweak to the `$heroImage` style:
+
+```diff
+const $heroImage: ImageStyle = {
+  width: "100%",
+- height: 180
++ aspectRatio: 3 / 4,
+}
+```
+
+🏃**Try it.** A small tweak that helps a good bit!
+
+4. Let's get the image to actually take over the header by making it transparent. Add this just inside the `Screen` component in **GameDetailScreen.tsx**:
+
+```tsx
+<Stack.Screen
+  options={{
+    title: game?.name ?? "",
+    ...(Platform.OS === "ios"
+      ? { headerTransparent: true, title: "" }
+      : { headerShown: true }),
+  }}
+/>
+{Platform.OS === "ios" && (
+  <Stack.Toolbar placement="left">
+    <Stack.Toolbar.Button icon="chevron.backward" onPress={() => router.back()} />
+  </Stack.Toolbar>
+)}
+<Stack.Toolbar placement="right">
+  <Stack.Toolbar.Button
+    icon={Platform.OS === "ios" ? "square.and.arrow.up" : ShareAndroid}
+    onPress={() => {
+      if (!game) return
+      const message = game.website
+        ? `Check out ${game.name}! ${game.website}`
+        : `Check out ${game.name}!`
+      Share.share({ message })
+    }}
+  />
+</Stack.Toolbar>
+```
+
+Don't forget to import `Platform` from `react-native` and `Stack` from `expo-router`.
+
+🏃**Try it.** Looks cool, but what about the buttons?
+
+5. Add the buttons back as native stack toolbar buttons. This code goes right below `Stack.Screen`:
+
+```tsx
+{Platform.OS === "ios" && (
+  <Stack.Toolbar placement="left">
+    <Stack.Toolbar.Button icon="chevron.backward" onPress={() => router.back()} />
+  </Stack.Toolbar>
+)}
+<Stack.Toolbar placement="right">
+  <Stack.Toolbar.Button
+    icon={Platform.OS === "ios" ? "square.and.arrow.up" : ShareAndroid}
+    onPress={() => {
+      if (!game) return
+      const message = game.website
+        ? `Check out ${game.name}! ${game.website}`
+        : `Check out ${game.name}!`
+      Share.share({ message })
+    }}
+  />
+</Stack.Toolbar>
+```
+
+🏃**Try it.** Looks good, and works, too! Also a good opportunity to see what happens on Android. Android doesn't have the zoom transition, so leaving the header looks solid.
+
+6. The zoom transition works from the Search tab, as well! Tweak **src/app/(tabs)/search/index.tsx**:
+
+```diff
+<RNHostView>
++ <Link.AppleZoom>
+  {game.background_image ? (
+    <Image source={{ uri: game.background_image }} style={{ width: 48, height: 48 }} />
+  ) : (
+    <View style={{ width: 48, height: 48, backgroundColor: "#ccc" }} />
+  )}
++ </Link.AppleZoom>
+</RNHostView>
+```
+
+## Exercise 5: Android colors
 
 ## Side Quests
 
-- Experimental native stack
+- Experimental native stack: TBD
 
 ## See the solution
 
