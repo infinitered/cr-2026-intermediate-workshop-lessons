@@ -546,7 +546,12 @@ Don't forget to import `Platform` from `react-native` and `Stack` from `expo-rou
 </RNHostView>
 ```
 
-## Exercise 5: Android colors
+## Exercise 5: Android dynmaic/ Material You colors
+
+You can access platform-native color pallettes via the `Color` API in `expo-router` [link](https://docs.expo.dev/router/reference/color/). This includes the static platform colors for iOS and Android. But, since the Jetpack Compose Expo UI components default to Material You on Android 12+ (where their colors adapt to your wallpaper background or a selection of a theme in the OS settings), we can use the `useMaterialColors` hook to access those directly.
+
+OH WAIT, this is wrong, hang on...
+
 
 ## Side Quests
 
