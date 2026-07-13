@@ -21,33 +21,541 @@ Let's use Expo Router-specific native UI functionality to adopt modern platform-
 
 # Exercises
 
-## Exercise 0: Build the app (if you haven't already)
-1. `yarn`
-2. `npx expo run:ios` or `npx expo run:android`
+## Exercise 1: Native tabs
 
-## Exercise 1: Something something
+We waited until the afternoon, but could actually be one of the first things you do when starting to add more platform native UI to your app. Native tabs are a pretty straightforward replacement for cross-platform JS tabs.
 
-Blah blah
+1. Clear out everything in **src/app/(tabs)/\_layout.tsx** and add the imports and outer tabs structure:
 
-### Subheading
+```tsx
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 
-Blah Blah
-
+export default function TabsLayout() {
+  return <NativeTabs></NativeTabs>;
+}
 ```
-code sample
+
+2. Each tab is represented in here as a tab trigger. The name of the trigger must match the route name. Add these inside `<NativeTabs>`:
+
+```tsx
+<NativeTabs.Trigger name="index">
+  <NativeTabs.Trigger.Label>Games</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+
+<NativeTabs.Trigger name="queue">
+  <NativeTabs.Trigger.Label>Queue</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+
+<NativeTabs.Trigger name="settings">
+  <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
 ```
+
+3. We will want to follow platform conventions for the tab icons. iOS strongly encourages use of SF Symbols:
+
+```diff
+<NativeTabs.Trigger name="index">
++  <NativeTabs.Trigger.Icon sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }} />
+  <NativeTabs.Trigger.Label>Games</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+
+<NativeTabs.Trigger name="queue">
++  <NativeTabs.Trigger.Icon sf={{ default: "list.bullet", selected: "list.bullet" }} />
+  <NativeTabs.Trigger.Label>Queue</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+
+<NativeTabs.Trigger name="settings">
++  <NativeTabs.Trigger.Icon  sf={{ default: "gearshape", selected: "gearshape.fill" }} />
+  <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+```
+
+Using separate "fill" icons give the selection state a distinct iOS look.
+
+> Here's where you can look up all the different options for SF Symbols: TODO
+
+4. We can just as easily use built-in Material Design icons on Android:
+
+```diff
+<NativeTabs.Trigger name="index">
+-  <NativeTabs.Trigger.Icon sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }} />
++  <NativeTabs.Trigger.Icon md="sports_esports" sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }} />
+  <NativeTabs.Trigger.Label>Games</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+
+<NativeTabs.Trigger name="queue">
+-  <NativeTabs.Trigger.Icon sf={{ default: "list.bullet", selected: "list.bullet" }} />
++ <NativeTabs.Trigger.Icon md="list" sf={{ default: "list.bullet", selected: "list.bullet" }} />
+  <NativeTabs.Trigger.Label>Queue</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+
+<NativeTabs.Trigger name="settings">
+-  <NativeTabs.Trigger.Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
++ <NativeTabs.Trigger.Icon md="settings" sf={{ default: "gearshape", selected: "gearshape.fill" }} />
+  <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+``
+
+> No shortage of options for Material Design icons, either! Check them out here: TODO
+
+🏃**Try it.** Looks like tabs and the tabs look native!
+
+## Exercise 2: Safe areas and large headers
+
+You might be happy that the native tabs are up, but maybe a little less happy with the missing navigation headers and content flowing under the safe areas. We're going to a do a little prep first so we can make all the changes we need.
+
+In particular, with the native tabs, we no longer get the option of configuring a per-tab stack... at least not without defining stacks in each tab. These stacks within tabs might not be useful yet in our app for anything other than apperances, but having a stack outside the tabs and inside the tabs is a common high-leverage design pattern for Expo Router, so you'll quite likey use this in the future.
+
+1. Create the following three folders inside **src/app/tabs**:
+- index
+- queue
+- settings
+
+TODO: add picture of file tree
+
+2. Create a **_layout.tsx** file and put this code inside of each one in order to give each tab its own stack:
+
+```tsx
+import { Stack } from "expo-router"
+
+export default function Stack() {
+  return (
+    <Stack>
+      <Stack.Screen name="index" />
+    </Stack>
+  )
+}
+```
+
+4. Add a name for each stack, like this:
+
+```diff
+import { Stack } from "expo-router"
+
+export default function Stack() {
+  return (
+    <Stack>
+-      <Stack.Screen name="index" />
++      <Stack.Screen name="index" options={{ title: "Games"}} />
+    </Stack>
+  )
+}
+```
+
+Repeat for "Queue" and "Settings".
+
+🏃**Try it.**  Each tab should have a stack header now.
+
+### Large headers
+
+5: TODO: I'm not sure if bottom offset will break when these other screens are using Expo UI. If it does, then we'll add a step to fix.
+
+6. Add the large header option to each layout, like this:
+
+```diff
+import { Stack } from "expo-router"
+
+export default function Stack() {
+  return (
+    <Stack>
+-      <Stack.Screen name="index" options={{ title: "Games"}} />
++      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true }} />
+    </Stack>
+  )
+}
+```
+
+Repeat for the other two tabs.
+
+7. You might be wondering about the shrink-on-scroll of the header that you see in a lot of apps. We can do this, but theres's some requirements for it to recognize scroll activity. Inside **GameFeedScreen**, update the Scrollview to include this prop:
+
+```diff
+<ScrollView
++  contentInsetAdjustmentBehavior="automatic"
+>
+```
+
+8. The scrollview also needs to be the topmost element on the screen. Remove the `Screen` component:
+
+```diff
+- <Screen preset="fixed">
++ <>
+```
+
+Repeat for each tab.
+
+🏃**Try it.**  Scrolling down should now minimize the header.
+
+9. On iOS, the header may overlap with the content. We can fix this by making the headers transparent. It doesn't give nearly as good of a result on Android, so let's make it platform specific:
+
+```diff
+import { Stack } from "expo-router"
+
+export default function Stack() {
+  return (
+    <Stack>
+-      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true }} />
++      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true }} />
+    </Stack>
+  )
+}
+```
+
+### Toolbar buttons
+
+With our new headers, let's refactor our header buttons some to fit better with our new design.
+
+10. In **GameFeedScreen.tsx**, Add the toolbar button just under the `<>`:
+
+```tsx
+<Stack.Toolbar placement="right">
+  <Stack.Toolbar.Button
+    icon={
+      Platform.OS === "ios"
+        ? showFilters
+          ? "line.3.horizontal.decrease.circle.fill"
+          : "line.3.horizontal.decrease.circle"
+        : FilterList
+    }
+    onPress={() => setShowFilters((v) => !v)}
+  />
+</Stack.Toolbar>
+```
+
+Import the Material icon we're using:
+
+```tsx
+import FilterList from "@expo/material-symbols/filter_list.xml"
+```
+
+11. Remove any old toolbar code, such as what was in `useLayoutEffect`
+
+🏃**Try it.**  Now the filter button fits in quite nicely with the new header effects
+
+## Exercise 3: Search
+
+Of course, we could always just add a search text input to the Game Feed. But a lot of apps have search functionality that's more built-in to the navigation layer itself. There's a few different ways to add search to our headers and tabs; let's try them.
+
+### Search level 1: The header SearchBar
+
+We have a hunch that we'll like this more on Android than iOS, but it kind of works for both, so let's give it a go.
+
+1. Add some search state to **GameFeedScreen.tsx**:
+
+```tsx
+const [searchText, setSearchText] = useState("")
+```
+
+2. We already had a memo function to filter results on the Game Feed; let's incorporate `searchText` into it:
+
+```diff
+const filteredYearGroups = useMemo(() => {
+if (!yearGroups) return yearGroups
+  const hasGenreFilter = genreIds.length > 0
++  const searchFilter = searchText.toLowerCase().trim()
+
++  if (!hasGenreFilter && !searchFilter) return yearGroups
+
+  return yearGroups
+    .map((group) => ({
+      ...group,
+      games: group.games.filter((game) => {
+        if (hasGenreFilter && !game.genres.some((g) => genreIds.includes(g.id))) return false
++        if (searchFilter && !game.name.toLowerCase().includes(searchFilter)) return false
+        return true
+      }),
+    }))
+    .filter((group) => group.games.length > 0)
+-}, [yearGroups, genreIds])
++}, [yearGroups, genreIds, searchText])
+```
+
+3. Add the `Stack.SearchBar` component right above `Stack.Toolbar`, inside the `<>`:
+
+```tsx
+<Stack.SearchBar
+  placeholder="Search games..."
+  onChangeText={(e) => setSearchText(e.nativeEvent.text)}
+/>
+```
+
+🏃**Try it.**  Check out the search bar in the header on Android. It also shows up on iOS, but below the header.
+
+### Search Level 2: The Search tab
+
+Let's suppose we don't like the way iOS does it and would rather have a separate search tab.
+
+4. Disable the search bar on iOS:
+
+```diff
+-<Stack.SearchBar
+{Platform.OS !== "ios" ? (
+  placeholder="Search games..."
+  onChangeText={(e) => setSearchText(e.nativeEvent.text)}
+-/>
++/>) : null}
+```
+
+5. Add a **search** folder inside **src/app/(tabs)** and create a **_layout.tsx** and an **index.tsx** file inside the folder.
+
+6. Add this code to **_layout.tsx**:
+
+```tsx
+import { Stack } from "expo-router"
+
+export default function Layout() {
+  return <Stack />
+}
+```
+
+7. Add this code to **index.tsx**. We're just implementing a filter-able list of games, nothing we haven't done already. That said, if you have time and the desire, feel free to make your own!
 
 <details>
-  <summary>expanding code sample</summary>
+  <summary>Expand for all the code</summary>
+```tsx
+import { useMemo, useState } from "react"
+import { Image, View } from "react-native"
+import { Stack, useRouter } from "expo-router"
+import {
+  Button,
+  ContentUnavailableView,
+  Host,
+  HStack,
+  List,
+  RNHostView,
+  Text,
+  VStack,
+} from "@expo/ui/swift-ui"
+import { buttonStyle, font, foregroundStyle, listStyle } from "@expo/ui/swift-ui/modifiers"
 
+import { useGamesByYear } from "@/services/api/games"
+import type { Game } from "@/services/api/types"
+
+export default function SearchScreen() {
+  const router = useRouter()
+  const [searchText, setSearchText] = useState("")
+  const { data: yearGroups } = useGamesByYear()
+
+  const allGames = useMemo(() => {
+    if (!yearGroups) return []
+    return yearGroups.flatMap((group) => group.games)
+  }, [yearGroups])
+
+  const filteredGames = useMemo(() => {
+    if (!searchText.trim()) return allGames
+    const query = searchText.toLowerCase()
+    return allGames.filter((game) => game.name.toLowerCase().includes(query))
+  }, [allGames, searchText])
+
+  return (
+    <>
+      <Stack.SearchBar
+        placeholder="Search games..."
+        onChangeText={(e) => setSearchText(e.nativeEvent.text)}
+      />
+      <Host style={{ flex: 1 }}>
+        {filteredGames.length > 0 ? (
+          <List modifiers={[listStyle("plain")]}>
+            {filteredGames.map((game) => (
+              <Button
+                key={game.id}
+                onPress={() => router.push(`/game/${game.id}`)}
+                modifiers={[buttonStyle("plain")]}
+              >
+                <SearchRow game={game} />
+              </Button>
+            ))}
+          </List>
+        ) : (
+          <ContentUnavailableView
+            title={searchText ? "No Results" : "Search for a game"}
+            systemImage={searchText ? "magnifyingglass" : "gamecontroller"}
+            description={
+              searchText ? `No games match "${searchText}"` : "Type to search for games"
+            }
+          />
+        )}
+      </Host>
+    </>
+  )
+}
+
+function SearchRow({ game }: { game: Game }) {
+  return (
+    <HStack spacing={12} alignment="center">
+      <VStack modifiers={[frame({ width: 48, height: 48 }), clipShape("roundedRectangle", 6)]}>
+        <RNHostView>
+          {game.background_image ? (
+            <Image source={{ uri: game.background_image }} style={{ width: 48, height: 48 }} />
+          ) : (
+            <View style={{ width: 48, height: 48, backgroundColor: "#ccc" }} />
+          )}
+        </RNHostView>
+      </VStack>
+      <VStack alignment="leading" spacing={2}>
+        <Text modifiers={[font({ size: 15, weight: "semibold" })]}>{game.name}</Text>
+        <Text
+          modifiers={[
+            font({ size: 12 }),
+            foregroundStyle({ type: "hierarchical", style: "secondary" }),
+          ]}
+        >
+          {game.genres?.map((g) => g.name).join(", ") ?? ""}
+        </Text>
+      </VStack>
+    </HStack>
+  )
+}
+```
 </details>
 
-🏃**Try it.** Open up the app after changing the settings. How well can you navigate around? Log in (if not already), scroll down on the lists, switch tabs.
+8. In **src/app/(tabs)/_layout.tsx**, Add the conditional search tab after the index tab:
+
+```tsx
+<NativeTabs.Trigger name="search" role="search" hidden={Platform.OS !== "ios"}>
+  <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+```
+
+Note the "search" role.
+
+🏃**Try it.** Searching now brings up an entire separate view.
+
+## Exercise 4: Zoom transitions
+
+iOS includes some cool features for doing platform-native shared element transitions. The zoom transition causes a view to morph from one screen to its equivalent size and position on the next screen. It works particularly well for images.
+
+1. Let's first try just adding the zoom transition "source". Go to **app/components/GameCard.tsx** and surround the image with `Link.AppleZoom`:
+
+```diff
+<Link.AppleZoom>
+<!-- TODO: copy from module 3>
+</Link.AppleZoom>
+```
+
+🏃**Try it.** It tries to do something! Interesting...
+
+2. Let's go implement a "zoom target", which gives a hint as to what the source should be transitioning to. Add `Link.AppleZoomTarget` in **app/components/GameDetailScreen.tsx**
+
+```diff
+{game.background_image (
++  <Link.AppleZoomTarget>
+    <Image source={{ uri: game.background_image }} style={$heroImage} blurRadius={3} />
++  </Link.AppleZoomTarget>
+)}
+```
+
+🏃**Try it.** Oof, that doesn't look great.
+
+### Making a zoom-able view
+
+We're going to eventually have the cover image take over the entire top of the screen, for a cool effect that takes over the header. 
+
+3. First, let's fix the image as it is. Remove the blur:
+
+```diff
+{game.background_image (
+  <Link.AppleZoomTarget>
+-    <Image source={{ uri: game.background_image }} style={$heroImage} blurRadius={3} />
++    <Image source={{ uri: game.background_image }} style={$heroImage} blurRadius={3} />
+  </Link.AppleZoomTarget>
+)}
+```
+
+And a small tweak to the `$heroImage` style:
+
+```diff
+const $heroImage: ImageStyle = {
+  width: "100%",
+- height: 180
++ aspectRatio: 3 / 4,
+}
+```
+
+🏃**Try it.** A small tweak that helps a good bit!
+
+4. Let's get the image to actually take over the header by making it transparent. Add this just inside the `Screen` component in **GameDetailScreen.tsx**:
+
+```tsx
+<Stack.Screen
+  options={{
+    title: game?.name ?? "",
+    ...(Platform.OS === "ios"
+      ? { headerTransparent: true, title: "" }
+      : { headerShown: true }),
+  }}
+/>
+{Platform.OS === "ios" && (
+  <Stack.Toolbar placement="left">
+    <Stack.Toolbar.Button icon="chevron.backward" onPress={() => router.back()} />
+  </Stack.Toolbar>
+)}
+<Stack.Toolbar placement="right">
+  <Stack.Toolbar.Button
+    icon={Platform.OS === "ios" ? "square.and.arrow.up" : ShareAndroid}
+    onPress={() => {
+      if (!game) return
+      const message = game.website
+        ? `Check out ${game.name}! ${game.website}`
+        : `Check out ${game.name}!`
+      Share.share({ message })
+    }}
+  />
+</Stack.Toolbar>
+```
+
+Don't forget to import `Platform` from `react-native` and `Stack` from `expo-router`.
+
+🏃**Try it.** Looks cool, but what about the buttons?
+
+5. Add the buttons back as native stack toolbar buttons. This code goes right below `Stack.Screen`:
+
+```tsx
+{Platform.OS === "ios" && (
+  <Stack.Toolbar placement="left">
+    <Stack.Toolbar.Button icon="chevron.backward" onPress={() => router.back()} />
+  </Stack.Toolbar>
+)}
+<Stack.Toolbar placement="right">
+  <Stack.Toolbar.Button
+    icon={Platform.OS === "ios" ? "square.and.arrow.up" : ShareAndroid}
+    onPress={() => {
+      if (!game) return
+      const message = game.website
+        ? `Check out ${game.name}! ${game.website}`
+        : `Check out ${game.name}!`
+      Share.share({ message })
+    }}
+  />
+</Stack.Toolbar>
+```
+
+🏃**Try it.** Looks good, and works, too! Also a good opportunity to see what happens on Android. Android doesn't have the zoom transition, so leaving the header looks solid.
+
+6. The zoom transition works from the Search tab, as well! Tweak **src/app/(tabs)/search/index.tsx**:
+
+```diff
+<RNHostView>
++ <Link.AppleZoom>
+  {game.background_image ? (
+    <Image source={{ uri: game.background_image }} style={{ width: 48, height: 48 }} />
+  ) : (
+    <View style={{ width: 48, height: 48, backgroundColor: "#ccc" }} />
+  )}
++ </Link.AppleZoom>
+</RNHostView>
+```
+
+## Exercise 5: Android dynmaic/ Material You colors
+
+You can access platform-native color pallettes via the `Color` API in `expo-router` [link](https://docs.expo.dev/router/reference/color/). This includes the static platform colors for iOS and Android. But, since the Jetpack Compose Expo UI components default to Material You on Android 12+ (where their colors adapt to your wallpaper background or a selection of a theme in the OS settings), we can use the `useMaterialColors` hook to access those directly.
+
+OH WAIT, this is wrong, hang on...
+
 
 ## Side Quests
 
-- ???
-- ???
+- Experimental native stack: TBD
 
 ## See the solution
 
