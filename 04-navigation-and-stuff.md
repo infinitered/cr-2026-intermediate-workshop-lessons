@@ -176,6 +176,8 @@ Repeat for "Queue" and "Settings".
 +<ScrollView contentContainerStyle={{ paddingBottom: bottom }} style={$styles.flex1}>
 ```
 
+(That magnifying glass icon is going to look funny, we'll deal with that)
+
 7. Add some bottom padding in **QueueScreen.tsx**:
 
 ```diff
@@ -202,7 +204,7 @@ Repeat for "Queue" and "Settings".
 
 6. Before we move on, let's fix those 
 
-6. Add the large header option to each layout, like this:
+6. Add the large header option to each layout, like this. Also required for collapsing on scroll is making it transparent:
 
 ```diff
 import { Stack } from "expo-router"
@@ -211,7 +213,7 @@ export default function Stack() {
   return (
     <Stack>
 -      <Stack.Screen name="index" options={{ title: "Games"}} />
-+      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true }} />
++      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true, headerTransparent: true }} />
     </Stack>
   )
 }
@@ -227,12 +229,16 @@ Repeat for the other two tabs.
 >
 ```
 
+This also takes care of keeping the content below the large header.
+
 8. The scrollview also needs to be the topmost element on the screen. Remove the `Screen` component:
 
 ```diff
 - <Screen preset="fixed">
 + <>
 ```
+
+Also, move all the `Stack.Toolbar` stuff below the `ScrollView` (not sure why, but let's go with it - the scroll view is technically supported to be the top-level control, anyway)
 
 Repeat for each tab.
 
@@ -246,105 +252,55 @@ import { Stack } from "expo-router"
 export default function Stack() {
   return (
     <Stack>
--      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true }} />
-+      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true }} />
+-      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true, headerTransparent: true }} />
++      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true, ...(Platform.OS === "ios" && { headerTransparent: true }), }} />
     </Stack>
   )
 }
 ```
 
-### Toolbar buttons
-
-With our new headers, let's refactor our header buttons some to fit better with our new design.
-
-10. In **GameFeedScreen.tsx**, Add the toolbar button just under the `<>`:
-
-```tsx
-<Stack.Toolbar placement="right">
-  <Stack.Toolbar.Button
-    icon={
-      Platform.OS === "ios"
-        ? showFilters
-          ? "line.3.horizontal.decrease.circle.fill"
-          : "line.3.horizontal.decrease.circle"
-        : FilterList
-    }
-    onPress={() => setShowFilters((v) => !v)}
-  />
-</Stack.Toolbar>
-```
-
-Import the Material icon we're using:
-
-```tsx
-import FilterList from "@expo/material-symbols/filter_list.xml"
-```
-
-11. Remove any old toolbar code, such as what was in `useLayoutEffect`
-
 🏃**Try it.**  Now the filter button fits in quite nicely with the new header effects
 
-## Exercise 3: Search
+## Exercise 3: Search Part 2
 
-Of course, we could always just add a search text input to the Game Feed. But a lot of apps have search functionality that's more built-in to the navigation layer itself. There's a few different ways to add search to our headers and tabs; let's try them.
+That stray search button is probably really gnawing at you right now. Fortunately, there's some great ways to integrate search directly into navigation headers and tabs.
 
-### Search level 1: The header SearchBar
+### The header SearchBar
 
 We have a hunch that we'll like this more on Android than iOS, but it kind of works for both, so let's give it a go.
 
-1. Add some search state to **GameFeedScreen.tsx**:
-
-```tsx
-const [searchText, setSearchText] = useState("")
-```
-
-2. We already had a memo function to filter results on the Game Feed; let's incorporate `searchText` into it:
-
-```diff
-const filteredYearGroups = useMemo(() => {
-if (!yearGroups) return yearGroups
-  const hasGenreFilter = genreIds.length > 0
-+  const searchFilter = searchText.toLowerCase().trim()
-
-+  if (!hasGenreFilter && !searchFilter) return yearGroups
-
-  return yearGroups
-    .map((group) => ({
-      ...group,
-      games: group.games.filter((game) => {
-        if (hasGenreFilter && !game.genres.some((g) => genreIds.includes(g.id))) return false
-+        if (searchFilter && !game.name.toLowerCase().includes(searchFilter)) return false
-        return true
-      }),
-    }))
-    .filter((group) => group.games.length > 0)
--}, [yearGroups, genreIds])
-+}, [yearGroups, genreIds, searchText])
-```
-
-3. Add the `Stack.SearchBar` component right above `Stack.Toolbar`, inside the `<>`:
+1. Add the `Stack.SearchBar` component next to the other `Stack.Toolbar` components, inside the `<>`:
 
 ```tsx
 <Stack.SearchBar
   placeholder="Search games..."
-  onChangeText={(e) => setSearchText(e.nativeEvent.text)}
+  onChangeText={(e) => setSearchQuery(e.nativeEvent.text)}
 />
 ```
 
-🏃**Try it.**  Check out the search bar in the header on Android. It also shows up on iOS, but below the header.
+2. Remove the `FeedSearch` component to get rid of the old Android search bar.
 
-### Search Level 2: The Search tab
+3. Remove the whole `Stack.Toolbar` conditional section that starts with this to remove the old iOS search bar:
+
+```tsx
+{Platform.OS !== "android" && (
+        <Stack.Toolbar placement="bottom">
+```
+
+🏃**Try it.**  Check out the search bar in the header on Android. It also shows up on iOS, but below the header when you swipe down a bit.
+
+### The iOS search tab
 
 Let's suppose we don't like the way iOS does it and would rather have a separate search tab.
 
 4. Disable the search bar on iOS:
 
 ```diff
--<Stack.SearchBar
-{Platform.OS !== "ios" ? (
++{Platform.OS !== "ios" ? (
+<Stack.SearchBar
   placeholder="Search games..."
-  onChangeText={(e) => setSearchText(e.nativeEvent.text)}
--/>
+  onChangeText={(e) => setSearchQuery(e.nativeEvent.text)}
+/>
 +/>) : null}
 ```
 
@@ -477,17 +433,41 @@ Note the "search" role.
 
 iOS includes some cool features for doing platform-native shared element transitions. The zoom transition causes a view to morph from one screen to its equivalent size and position on the next screen. It works particularly well for images.
 
-1. Let's first try just adding the zoom transition "source". Go to **app/components/GameCard.tsx** and surround the image with `Link.AppleZoom`:
+1. Let's first try just adding the zoom transition "source". Go to **app/components/GameCard.tsx** and surround the touchable with `Link.AppleZoom`:
 
 ```diff
++<Link.AppleZoom>
+  <TouchableOpacity
+    activeOpacity={0.8}
+    style={themed($cardOuter)}
+    onPress={() => router.push(`/game/${game.id}`)}
+  >
+    <!-- -->
+  </TouchableOpacity>
++</Link.AppleZoom>
+```
+
+(`Link` is imported from `expo-router`)
+
+2. You also need to switch the touchable to use a surrounding Link in order to be compatible with this Expo Router-based functionality:
+
+```diff
++<Link href={`/game/${game.id}`} asChild>
 <Link.AppleZoom>
-<!-- TODO: copy from module 3>
+  <TouchableOpacity
+    activeOpacity={0.8}
+    style={themed($cardOuter)}
+-    onPress={() => router.push(`/game/${game.id}`)}
+  >
+    <!-- -->
+  </TouchableOpacity>
 </Link.AppleZoom>
++</Link>
 ```
 
 🏃**Try it.** It tries to do something! Interesting...
 
-2. Let's go implement a "zoom target", which gives a hint as to what the source should be transitioning to. Add `Link.AppleZoomTarget` in **app/components/GameDetailScreen.tsx**
+3. Let's go implement a "zoom target", which gives a hint as to what the source should be transitioning to. Add `Link.AppleZoomTarget` in **app/components/GameDetailScreen.tsx**
 
 ```diff
 {game.background_image (
@@ -503,13 +483,13 @@ iOS includes some cool features for doing platform-native shared element transit
 
 We're going to eventually have the cover image take over the entire top of the screen, for a cool effect that takes over the header. 
 
-3. First, let's fix the image as it is. Remove the blur:
+4. First, let's fix the image as it is. Remove the blur:
 
 ```diff
 {game.background_image (
   <Link.AppleZoomTarget>
 -    <Image source={{ uri: game.background_image }} style={$heroImage} blurRadius={3} />
-+    <Image source={{ uri: game.background_image }} style={$heroImage} blurRadius={3} />
++    <Image source={{ uri: game.background_image }} style={$heroImage} />
   </Link.AppleZoomTarget>
 )}
 ```
@@ -526,7 +506,7 @@ const $heroImage: ImageStyle = {
 
 🏃**Try it.** A small tweak that helps a good bit!
 
-4. Let's get the image to actually take over the header by making it transparent. Add this just inside the `Screen` component in **GameDetailScreen.tsx**:
+4. Let's get the image to actually take over the header by making it transparent. Add this just inside **src/app/game/[id].tsx**:
 
 ```tsx
 <Stack.Screen
@@ -537,26 +517,10 @@ const $heroImage: ImageStyle = {
       : { headerShown: true }),
   }}
 />
-{Platform.OS === "ios" && (
-  <Stack.Toolbar placement="left">
-    <Stack.Toolbar.Button icon="chevron.backward" onPress={() => router.back()} />
-  </Stack.Toolbar>
-)}
-<Stack.Toolbar placement="right">
-  <Stack.Toolbar.Button
-    icon={Platform.OS === "ios" ? "square.and.arrow.up" : ShareAndroid}
-    onPress={() => {
-      if (!game) return
-      const message = game.website
-        ? `Check out ${game.name}! ${game.website}`
-        : `Check out ${game.name}!`
-      Share.share({ message })
-    }}
-  />
-</Stack.Toolbar>
 ```
 
 Don't forget to import `Platform` from `react-native` and `Stack` from `expo-router`.
+
 
 🏃**Try it.** Looks cool, but what about the buttons?
 
@@ -580,6 +544,12 @@ Don't forget to import `Platform` from `react-native` and `Stack` from `expo-rou
     }}
   />
 </Stack.Toolbar>
+```
+
+Also add an import to a Material Symbols share icon:
+
+```tsx
+import ShareAndroid from "@expo/material-symbols/share.xml"
 ```
 
 🏃**Try it.** Looks good, and works, too! Also a good opportunity to see what happens on Android. Android doesn't have the zoom transition, so leaving the header looks solid.
