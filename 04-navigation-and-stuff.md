@@ -552,7 +552,31 @@ Also add an import to a Material Symbols share icon:
 import ShareAndroid from "@expo/material-symbols/share.xml"
 ```
 
+6. Remove the `useLayoutEffect` from **src/app/game/[id].tsx**.
+
 🏃**Try it.** Looks good, and works, too! Also a good opportunity to see what happens on Android. Android doesn't have the zoom transition, so leaving the header looks solid.
+
+### A few more details
+
+7. Fix that Queue button in **GameDetailScreen** just by moving it to the bottom:
+
+```diff
+const $queueOverlay: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  position: "absolute",
+-  top: spacing.xs,
++  top: spacing.sx,
+  right: spacing.xs,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+  backgroundColor: "rgba(0,0,0,0.6)",
+  paddingHorizontal: spacing.xs,
+  paddingVertical: 4,
+  borderRadius: spacing.xs,
+})
+```
+
+### One more screen!
 
 6. The zoom transition works from the Search tab, as well! Tweak **src/app/(tabs)/search/index.tsx**:
 
