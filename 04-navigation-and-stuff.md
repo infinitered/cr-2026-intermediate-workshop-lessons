@@ -6,18 +6,22 @@ Let's use Expo Router-specific native UI functionality to adopt modern platform-
 
 ### Concepts
 
-- something
-- something else
+- Platform native tab functionality
+- Headers and scrolling
+- Platform native shared element transitions
+- Android dynamic colors
 
 ### Features to build
 
-- Update Settings screen controls
-- Update queue and filter lists to use native list controls with sorting and deletion gestures
+- Add native tabs
+- Adopt large headers on iOS
+- Move search to tab/header functionality
+- Make a smooth zoom transition on iOS from game list to detail
+- Switch color theme over to dynamic colors on Android
 
 ### Resources
 
-- React Native docs
-  - [blahblah](https://reactnative.dev/docs/text#allowfontscaling)
+- TBD
 
 # Exercises
 
@@ -28,10 +32,10 @@ We waited until the afternoon, but could actually be one of the first things you
 1. Clear out everything in **src/app/(tabs)/\_layout.tsx** and add the imports and outer tabs structure:
 
 ```tsx
-import { NativeTabs } from "expo-router/unstable-native-tabs";
+import { NativeTabs } from "expo-router/unstable-native-tabs"
 
 export default function TabsLayout() {
-  return <NativeTabs></NativeTabs>;
+  return <NativeTabs></NativeTabs>
 }
 ```
 
@@ -54,7 +58,7 @@ export default function TabsLayout() {
 3. We will want to follow platform conventions for the tab icons. iOS strongly encourages use of SF Symbols:
 
 ```diff
-<NativeTabs.Trigger name="index">
+<NativeTabs.Trigger name="(home)/index">
 +  <NativeTabs.Trigger.Icon sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }} />
   <NativeTabs.Trigger.Label>Games</NativeTabs.Trigger.Label>
 </NativeTabs.Trigger>
@@ -104,21 +108,18 @@ Using separate "fill" icons give the selection state a distinct iOS look.
 
 You might be happy that the native tabs are up, but maybe a little less happy with the missing navigation headers and content flowing under the safe areas. We're going to a do a little prep first so we can make all the changes we need.
 
-In particular, with the native tabs, we no longer get the option of configuring a per-tab stack... at least not without defining stacks in each tab. These stacks within tabs might not be useful yet in our app for anything other than apperances, but having a stack outside the tabs and inside the tabs is a common high-leverage design pattern for Expo Router, so you'll quite likey use this in the future.
+In particular, with the native tabs, we no longer get the option of configuring a per-tab JS stack, so now we need to do the same thing we did with the Games tab with every tab. These stacks within tabs might not be useful yet in our app for anything other than apperances, but having a stack outside the tabs and inside the tabs is a common high-leverage design pattern for Expo Router, so you'll quite likey use this in the future.
 
 1. Create the following three folders inside **src/app/tabs**:
-- index
 - queue
 - settings
-
-TODO: add picture of file tree
 
 2. Create a **_layout.tsx** file and put this code inside of each one in order to give each tab its own stack:
 
 ```tsx
 import { Stack } from "expo-router"
 
-export default function Stack() {
+export default function Layout() {
   return (
     <Stack>
       <Stack.Screen name="index" />
@@ -144,11 +145,62 @@ export default function Stack() {
 
 Repeat for "Queue" and "Settings".
 
-🏃**Try it.**  Each tab should have a stack header now.
+5. We're going to de-style the Games tab so it matches the other ones. This will set the stage for other changes we're adding later. Remove the stack header styles from **src/app/(tabs)/(home)/index.tsx**:
+
+```diff
+<Stack
+-  screenOptions={{
+-    headerStyle: { backgroundColor: colors.brandSurface },
+-    headerTintColor: colors.brandSurfaceText,
+-    headerTitleStyle: { fontFamily: typeScale.headline1.fontFamily },
+-  }}
+>
+  <Stack.Screen name="index" options={{ title: "Games" }} />
+</Stack>
+```
+
+(you'll be able to remove some other references now, as well)
+
+🏃**Try it.**  Each tab should have a plain stack header now.
+
+### ~Interlude~ Fix bottom offsets
+
+6. Add some bottom padding in **GameFeedScreen.tsx**:
+
+```diff
++import { useSafeAreaInsets } from "react-native-safe-area-context"
+// ...
++const { bottom } = useSafeAreaInsets()
+// ...
+-<ScrollView style={$styles.flex1}>
++<ScrollView contentContainerStyle={{ paddingBottom: bottom }} style={$styles.flex1}>
+```
+
+7. Add some bottom padding in **QueueScreen.tsx**:
+
+```diff
++import { useSafeAreaInsets } from "react-native-safe-area-context"
+// ...
++const { bottom } = useSafeAreaInsets()
+// ...
+-<View style={[themed($bottomButton)}]}>
++<View style={[themed($bottomButton), { paddingBottom: bottom + 16 }]}>
+```
+
+8. Add some bottom padding in **SettingsScreen.tsx**:
+
+```diff
++import { useSafeAreaInsets } from "react-native-safe-area-context"
+// ...
++const { bottom } = useSafeAreaInsets()
+// ...
+-<Screen preset="scroll" contentContainerStyle={[themed($container)]}>
++<Screen preset="scroll" contentContainerStyle={[themed($container), { paddingBottom: bottom }]}>
+```
 
 ### Large headers
 
-5: TODO: I'm not sure if bottom offset will break when these other screens are using Expo UI. If it does, then we'll add a step to fix.
+6. Before we move on, let's fix those 
 
 6. Add the large header option to each layout, like this:
 
