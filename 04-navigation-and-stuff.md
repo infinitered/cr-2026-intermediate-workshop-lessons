@@ -790,6 +790,8 @@ export function YearBadge({ year }: YearBadgeProps) {
 
 🏃**Try it.** The Year badge will now include a few variations on the original yellow theme.
 
+With a larger Expo UI component tree, you can also set `seedColor` on `Host`, and then any child components that pull colors from `useMaterialColors` will use the seed from the nearest parent `Host`.
+
 ## Side Quests
 
 - Experimental native stack: TBD
