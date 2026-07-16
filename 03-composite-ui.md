@@ -99,6 +99,39 @@ export default function HomeStackLayout() {
 
 🏃**Try it.** Reload. The Games screen should look exactly the same - but now its header comes from a native stack, and `Stack.Toolbar` has somewhere to render.
 
+### Wire up the state the toolbar drives
+
+The starter `GameFeedScreen` renders the feed from a shared selector and holds a read-only view mode:
+
+```tsx
+const { yearGroups, isLoading, isError } = useFilteredGamesByYear();
+const [viewMode] = useState<ViewMode>("gallery");
+```
+
+The toolbar we're about to build only _flips_ state - the selector re-derives the feed in response. So before writing any menu, pull in the stores it reads and give `viewMode` a setter:
+
+```tsx
+import { SORT_OPTIONS, useFilteredGamesByYear } from "@/stores/gameFeed";
+import { useSettings, type SortOrder } from "@/stores/settings";
+import { useGenreFilter } from "@/stores/genreFilter";
+import { useFeedGenres } from "@/services/api/games";
+import { useAppTheme } from "@/theme/context";
+import { useToolbarIcons } from "@/utils/useToolbarIcons";
+
+// ...inside GameFeedScreen:
+const { theme } = useAppTheme();
+const { sortOrder, sortAscending, setSortOrder, setSortAscending } = useSettings();
+const { selectedIds: genreIds, isSelected, toggleGenre, clearGenres } = useGenreFilter();
+const { data: genres = [] } = useFeedGenres();
+const toolbarIcon = useToolbarIcons(theme.colors.brandSurfaceText);
+const hasFilters = genreIds.length > 0;
+
+const [viewMode, setViewMode] = useState<ViewMode>("gallery");
+const [viewOptionsOpen, setViewOptionsOpen] = useState(false);
+```
+
+`sortOrder`/`sortAscending` live in the shared `useSettings` store; the genre filter in `useGenreFilter`; the genre list comes from `useFeedGenres`. Nothing here forks per platform - the menu just calls these setters, and `useFilteredGamesByYear()` re-derives the visible feed automatically. `toolbarIcon` is the baseline's cross-platform icon resolver (`app/utils/useToolbarIcons.ts`) - it returns an SF Symbol on iOS and a rasterized Material Symbol on Android; **Exercise 3 unpacks why it has to work that way.**
+
 ### From imperative to declarative
 
 If you've set header buttons before, you've maybe done it the imperative way:
@@ -120,15 +153,17 @@ useLayoutEffect(() => {
 import { Stack } from "expo-router";
 ```
 
-2. Drop a single menu button anchored to the right into `GameFeedScreen`'s return:
+2. Drop a single menu button anchored to the right into `GameFeedScreen`'s return. Give it the filter icon via the `toolbarIcon` resolver you just wired up:
 
 ```tsx
 <Stack.Toolbar placement="right">
-  <Stack.Toolbar.Menu>{/* menu sections go here */}</Stack.Toolbar.Menu>
+  <Stack.Toolbar.Menu icon={toolbarIcon("filter")}>
+    {/* menu sections go here */}
+  </Stack.Toolbar.Menu>
 </Stack.Toolbar>
 ```
 
-A `Stack.Toolbar.Menu` placed in the toolbar becomes the tappable header button; its children become the menu that opens when you tap it.
+A `Stack.Toolbar.Menu` placed in the toolbar becomes the tappable header button; its children become the menu that opens when you tap it. The `icon` prop sets the glyph on that button.
 
 ### Build the menu sections
 
@@ -160,7 +195,7 @@ Add the `handleSort` helper to the component:
 ```tsx
 const handleSort = (order: SortOrder) => {
   if (order === sortOrder) {
-    setSortAscending((prev) => !prev); // tapping the active row toggles direction
+    setSortAscending(!sortAscending); // tapping the active row toggles direction
   } else {
     setSortOrder(order);
     setSortAscending(true);
@@ -227,96 +262,21 @@ const handleSort = (order: SortOrder) => {
 When a filter is applied, the menu button should _look_ active. `Stack.Toolbar.Menu` takes a `variant` and a `tintColor` - so let's make the trigger prominent when there's a filter on:
 
 ```diff
-+ const hasFilters = genreIds.length > 0
-
-- <Stack.Toolbar.Menu>
+- <Stack.Toolbar.Menu icon={toolbarIcon("filter")}>
 + <Stack.Toolbar.Menu
++   icon={toolbarIcon("filter")}
 +   variant={hasFilters ? "prominent" : "plain"}
 +   tintColor={hasFilters ? theme.colors.tint : undefined}
 + >
 ```
 
-<details>
-  <summary>Full assembled toolbar (Exercise 0 result)</summary>
-
-```tsx
-const SORT_OPTIONS: SortOrder[] = ["Name", "Rating", "Release Date"]
-
-// ...inside GameFeedScreen:
-const hasFilters = genreIds.length > 0
-
-<Stack.Toolbar placement="right">
-  <Stack.Toolbar.Menu
-    variant={hasFilters ? "prominent" : "plain"}
-    tintColor={hasFilters ? theme.colors.tint : undefined}
-  >
-    <Stack.Toolbar.Menu inline>
-      {SORT_OPTIONS.map((order) => (
-        <Stack.Toolbar.MenuAction
-          key={order}
-          isOn={sortOrder === order}
-          subtitle={sortOrder === order ? (sortAscending ? "Ascending" : "Descending") : undefined}
-          onPress={() => handleSort(order)}
-        >
-          {order}
-        </Stack.Toolbar.MenuAction>
-      ))}
-    </Stack.Toolbar.Menu>
-
-    <Stack.Toolbar.Menu inline>
-      <Stack.Toolbar.MenuAction isOn={viewMode === "gallery"} onPress={() => setViewMode("gallery")}>
-        Gallery
-      </Stack.Toolbar.MenuAction>
-      <Stack.Toolbar.MenuAction isOn={viewMode === "list"} onPress={() => setViewMode("list")}>
-        List
-      </Stack.Toolbar.MenuAction>
-    </Stack.Toolbar.Menu>
-
-    <Stack.Toolbar.Menu inline>
-      <Stack.Toolbar.Menu>
-        <Stack.Toolbar.Label>Filter</Stack.Toolbar.Label>
-        <Stack.Toolbar.Menu inline>
-          <Stack.Toolbar.MenuAction isOn={genreIds.length === 0} onPress={clearGenres}>
-            All Items
-          </Stack.Toolbar.MenuAction>
-        </Stack.Toolbar.Menu>
-        <Stack.Toolbar.Menu inline>
-          {genres.map((genre) => (
-            <Stack.Toolbar.MenuAction
-              key={genre.id}
-              isOn={isSelected(genre.id)}
-              onPress={() => toggleGenre(genre.id)}
-            >
-              {genre.name}
-            </Stack.Toolbar.MenuAction>
-          ))}
-        </Stack.Toolbar.Menu>
-      </Stack.Toolbar.Menu>
-      {hasFilters && (
-        <Stack.Toolbar.MenuAction onPress={clearGenres}>
-          {genreIds.length === 1 ? "Remove Filter" : "Remove Filters"}
-        </Stack.Toolbar.MenuAction>
-      )}
-    </Stack.Toolbar.Menu>
-
-    <Stack.Toolbar.Menu inline>
-      <Stack.Toolbar.MenuAction onPress={() => setViewOptionsOpen(true)}>
-        View Options
-      </Stack.Toolbar.MenuAction>
-    </Stack.Toolbar.Menu>
-  </Stack.Toolbar.Menu>
-</Stack.Toolbar>
-```
-
-</details>
-
 🏃**Try it.** Open the app and tap the header menu. Sort by Rating, then tap Rating again - the subtitle flips between Ascending/Descending and the feed re-sorts. Switch to List. Open Filter ›, pick a genre - the button turns "prominent" and the feed filters in place. Hit Remove Filter. Notice you wrote **zero** imperative navigation code.
 
-> 💡 The filtering itself lives in a single `filteredYearGroups` memo (search → genre → hideMature → sort). The menu only flips state; the pipeline that reacts to it is platform-agnostic. Keep it that way - it pays off when we add Android.
+> 💡 The filtering itself lives in a single selector, `useFilteredGamesByYear` (search → genre → hideMature → sort). The menu only flips store state; the pipeline that reacts to it is platform-agnostic. Keep it that way - it pays off when we add Android.
 
 ### Side Quests
 
-- Add a `subtitle` to the **Filter ›** submenu row showing the selected genres (e.g. "Action, Puzzle"). _Heads up: this currently isn't possible. Trace it down through `node_modules`._
+- Add a `subtitle` to the **Filter ›** submenu row showing the selected genres (e.g. "Action, Puzzle"). _Heads up: this is only possible on iOS at the moment._
 - Make the menu button's SF Symbol change when a filter is active.
 - Mark "Remove Filters" as `destructive` and see how iOS renders it.
 
@@ -324,13 +284,31 @@ const hasFilters = genreIds.length > 0
 
 A feed wants search. Rather than build a custom text input, we'll use each platform's _native_ search affordance - and this is our first lesson in **when one universal control isn't the right answer**. iOS and Android put search in different places by convention, so we deliberately fork the _control_ while sharing the _state_.
 
-Both platforms write to a single piece of state:
+Both platforms write to a single piece of state, then hand it to the shared selector:
 
 ```tsx
 const [searchQuery, setSearchQuery] = useState("");
+
+// swap Exercise 0's no-arg call for one that passes the live query:
+const { yearGroups, isLoading, isError } = useFilteredGamesByYear(searchQuery);
 ```
 
-...and our existing `filteredYearGroups` memo already filters on it (`game.name` includes the query). Neither platform touches that pipeline - they only call `setSearchQuery`.
+`useFilteredGamesByYear` already folds the query into its pipeline (`game.name` includes it, ahead of genre → hideMature → sort), so neither platform touches that logic - they only call `setSearchQuery`.
+
+The iOS pill also needs a little local UI state plus Ignite's `TextField` (the `toolbarIcon` resolver is already wired from Exercise 0):
+
+```tsx
+import { useRef, type ComponentRef } from "react";
+import { Pressable, useWindowDimensions, View, Platform } from "react-native";
+import { SymbolView } from "expo-symbols";
+
+import { TextField } from "@/components/TextField";
+
+// ...inside GameFeedScreen:
+const { width: windowWidth } = useWindowDimensions();
+const [searchActive, setSearchActive] = useState(false);
+const searchInputRef = useRef<ComponentRef<typeof TextField>>(null);
+```
 
 ### iOS: a bottom toolbar search pill
 
@@ -345,7 +323,7 @@ iOS convention (think Photos, Music) is a search affordance at the bottom. We ad
       <Stack.Toolbar.Spacer />
       <Stack.Toolbar.Button icon={toolbarIcon("search")} onPress={() => setSearchActive(true)} />
     </Stack.Toolbar>
-  );
+  )
 }
 ```
 
@@ -497,10 +475,14 @@ const $host: ViewStyle = { flex: 1 };
 
 Now the opposite lesson: **when the universal API _is_ the right answer.** The "View Options" row we wired into the menu back in Exercise 0 should open a sheet with a sort picker and a "Hide Mature" toggle. `@expo/ui`'s root (universal) export bridges SwiftUI ↔ Jetpack Compose, so `BottomSheet` + `FieldGroup` + `Picker` + `Switch` give us **one code path** that renders natively on both platforms.
 
-1. Import the universal controls:
+1. Import the universal controls, and add `hideMature`/`setHideMature` to the `useSettings` destructure you set up in Exercise 0:
 
 ```tsx
 import { BottomSheet, FieldGroup, Picker, Switch } from "@expo/ui";
+
+// widen the destructure:
+const { sortOrder, sortAscending, setSortOrder, setSortAscending, hideMature, setHideMature } =
+  useSettings();
 ```
 
 2. Drive the sheet from the `viewOptionsOpen` state the menu already toggles:
@@ -530,7 +512,7 @@ import { BottomSheet, FieldGroup, Picker, Switch } from "@expo/ui";
 </BottomSheet>
 ```
 
-`sortOrder` and `hideMature` come from the shared `useSettings` store - the same values the Settings screen reads - so changing them here is reflected everywhere, and the `filteredYearGroups` memo re-runs automatically.
+`sortOrder` and `hideMature` come from the shared `useSettings` store - the same values the Settings screen reads - so changing them here is reflected everywhere, and `useFilteredGamesByYear` re-derives the feed automatically.
 
 > ⚠️ **`snapPoints` gotcha.** Pass `snapPoints={["half", "full"]}`. Omit them and the sheet defaults to `fitToContents`, which collapses a `FieldGroup` to ~0 height - you'll get an invisible sheet and think it's broken.
 
@@ -540,8 +522,7 @@ import { BottomSheet, FieldGroup, Picker, Switch } from "@expo/ui";
 
 ### Side Quests
 
-- iOS polish: give the sheet a bold title and a "Done" button. (Deferred in the reference build - see if you can add it without breaking Android.)
-- Persist `hideMature` across launches and confirm the Settings screen stays in sync.
+- iOS polish: give the sheet a bold title and a "Done" button.
 
 ## Exercise 3: Android parity - icons & a native carousel
 
@@ -553,7 +534,7 @@ Run Exercise 0's menu on Android and the icons vanish. Root cause: Android's `St
 
 The trick: rasterize **Material Symbols** to image sources via `expo-symbols` (`unstable_getMaterialSymbolSourceAsync`), and pair each logical icon with both an SF name and a Material name behind a hook.
 
-1. Create **app/utils/useToolbarIcons.ts**:
+That hook already ships in the baseline - you wired it up back in Exercise 0. Here's what it does, in **app/utils/useToolbarIcons.ts**:
 
 ```tsx
 // app/utils/useToolbarIcons.ts
@@ -594,15 +575,14 @@ export function useToolbarIcons(color: string, size = 24) {
 }
 ```
 
-2. Now `icon={toolbarIcon("filter")}` Just Works on both platforms. Switch the root menu from a `<Stack.Toolbar.Icon sf=…>` child to the `icon` prop so it flows through the resolver too:
+Because your trigger already sets `icon={toolbarIcon("filter")}` (from Exercise 0), the resolver does the platform split for you - no change needed here. On iOS it hands `Stack.Toolbar.Menu` the SF Symbol name; on Android the same call yields a rasterized Material Symbol image source, so the button keeps its glyph instead of vanishing:
 
-```diff
+```tsx
 <Stack.Toolbar.Menu
+  icon={toolbarIcon("filter")} // SF Symbol on iOS, Material Symbol image on Android
   variant={hasFilters ? "prominent" : "plain"}
   tintColor={hasFilters ? theme.colors.tint : undefined}
-+  icon={toolbarIcon("filter")}
 >
--  <Stack.Toolbar.Icon sf="line.3.horizontal.decrease" />
 ```
 
 > 💡 **A platform _convention_ call, not a bug workaround.** Android overflow menus are conventionally **text-only**, so we keep menu-_row_ icons iOS-only and let the `isOn` checkmark carry selection on Android. The toolbar trigger button and the search magnifier _do_ keep their icons (toolbar actions and search bars are idiomatic with icons):
