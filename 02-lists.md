@@ -46,6 +46,7 @@ import {
   onTapGesture,
   moveDisabled,
 } from "@expo/ui/swift-ui/modifiers";
+import { useState } from "react";
 
 export function FavoriteGenresScreen() {
   const { favoriteGenres, otherGenres, isLoading, isFavorite, toggleFavorite } =
@@ -59,7 +60,7 @@ export function FavoriteGenresScreen() {
 }
 ```
 
-2. Something cool about Swift UI lists is that everything inside of `List` is inside of the list, but different elements can have different interactiosn. Since our list has separate sections of favorited and available genres, we're going to make those separate sections. Add this inside `Host`:
+2. Something cool about Swift UI lists is that everything inside of `List` is inside of the list, but different elements can have different interactions. Since our list has separate sections of favorites and available genres, we're going to make those separate sections. Add this inside `Host`:
 
 ```tsx
 <List modifiers={[environment("editMode", "active")]}>
@@ -90,7 +91,7 @@ export function FavoriteGenresScreen() {
 3. It should start to look like how we want it to look. Let's add some interactions, namely adding and removing favorites:
 
 ```diff
-+<List.ForEach onDelete={(indices) => { indicies.forEach(indice => toggleFavorite(indice)); }}>
++<List.ForEach onDelete={(indices) => { indices.forEach(index => toggleFavorite(favoriteGenres[index].id)); }}>
 -<List.ForEach>
   {favoriteGenres.map((genre) => (
     <Label
@@ -145,7 +146,7 @@ Let's improve the delete interaction by making it a little more obvious. Swift U
 
 That should take care of the sort handles.
 
-6. Just for run, let's add multi-select, so you can see all that edit mode can do:
+6. Just for fun, let's add multi-select, so you can see all that edit mode can do:
 
 ```diff
 - <List modifiers={[environment("editMode", "active")]}>
@@ -204,7 +205,6 @@ import {
   Button,
   HStack,
   VStack,
-  Image,
   Text as SwiftText,
   RNHostView,
 } from "@expo/ui/swift-ui"
@@ -212,12 +212,11 @@ import {
   environment,
   tag,
   onTapGesture,
-  contentShape,
-  shapes,
   badge,
   foregroundStyle,
   font,
 } from "@expo/ui/swift-ui/modifiers"
+import { useState } from "react";
 import { useQueueService } from "@/services/queueService"
 
 export function QueueScreen() {
@@ -227,9 +226,9 @@ export function QueueScreen() {
       return <LoadingScreen />
     }
 
-  return {
+  return (
     <Host style={{ flex: 1}}></Host>
-  }
+  )
 }
 ```
 
@@ -238,37 +237,39 @@ export function QueueScreen() {
 ```tsx
 <List>
   <List.ForEach onDelete={handleDelete} onMove={handleMove}>
-  {queuedGames.map((game, index) => (
-    <HStack
-      key={game.id}
-      spacing={12}
-      alignment="center"
-      />
-      <SwiftText
-        modifiers={[
-          foregroundStyle({ type: "hierarchical", style: "secondary" }),
-          font({ weight: "bold", size: 12 }),
-        ]}
-      >
-        {String(index + 1)}
-      </SwiftText>
-      <VStack>
-      <VStack alignment="leading" spacing={2}>
-        <SwiftText modifiers={[font({ weight: "semibold" })]}>{game.name}</SwiftText>
-        {game.genres && game.genres.length > 0 ? (
+    {queuedGames.map((game, index) => (
+      <HStack
+        key={game.id}
+        spacing={12}
+        alignment="center"
+        >
           <SwiftText
             modifiers={[
-              font({ size: 12 }),
               foregroundStyle({ type: "hierarchical", style: "secondary" }),
+              font({ weight: "bold", size: 12 }),
             ]}
           >
-            {game.genres.map((g) => g.name).join(", ")}
+            {String(index + 1)}
           </SwiftText>
-        ) : null}
-      </VStack>
-    </HStack>
-  ))}
-</List.ForEach>
+          <VStack>
+          <VStack alignment="leading" spacing={2}>
+            <SwiftText modifiers={[font({ weight: "semibold" })]}>{game.name}</SwiftText>
+            {game.genres && game.genres.length > 0 ? (
+              <SwiftText
+                modifiers={[
+                  font({ size: 12 }),
+                  foregroundStyle({ type: "hierarchical", style: "secondary" }),
+                ]}
+              >
+                {game.genres.map((g) => g.name).join(", ")}
+              </SwiftText>
+            ) : null}
+          </VStack>
+        </VStack>
+      </HStack>
+    ))}
+  </List.ForEach>
+</List>
 ```
 
 This might look like a lot to unpack, but it's pretty straightforward. `HStack` lays out children horizontally, `VStack` lays them out vertically. Combined with text components, we used this to put the queue position on the left and the title and genres stacked on top of each other to the right.
@@ -303,7 +304,7 @@ Then update the List modifier to use the state:
 +<List modifiers={[environment("editMode", editMode ? "active" : "inactive")]}>
 ```
 
-5. But we need some button to change the state. There might be better options later, but for now we'll put a button in the navigation header. [This layout in the Apple SwiftUI documentation](https://developer.apple.com/documentation/swiftui/editbutton) would be nice but we're not quite there yet with the rest of the UI, so let's do something close to that by putting an edit button in the top right:
+5. But we need some button to change the state. There might be better options later, but for now we'll put a button in the navigation header. [This layout in the Apple SwiftUI documentation](https://developer.apple.com/documentation/swiftui/editbutton) would be nice but we're not quite there yet with the rest of the UI, so let's do something close to that by putting an edit button in the top right just inside the `<List />` component:
 
 ```diff
 <Section
@@ -336,7 +337,14 @@ Then update the List modifier to use the state:
 ```tsx
 {game.background_image ? (
   <RNHostView matchContents>
-    <ExpoImage source={game.background_image} style={$thumbnail} />
+    <ExpoImage
+      source={game.background_image}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 6,
+      }}
+    />
   </RNHostView>
 ) : null
 }
@@ -361,13 +369,10 @@ const SHIPMENT_SIZE=3
   key={game.id}
   spacing={12}
   alignment="center"
-  modifiers={[
-    tag(game.id),
++  modifiers={[
++    tag(game.id),
 +    ...(index < SHIPMENT_SIZE ? [badge("Next")] : []),
-    onTapGesture(() => {
-      if (!editMode) router.push(`/game/${game.id}`)
-    }),
-  ]}
++  ]}
 >
 ```
 
@@ -424,22 +429,22 @@ import {
   useMaterialColors,
 } from "@expo/ui/jetpack-compose"
 import { clickable, fillMaxWidth, padding, size, weight } from "@expo/ui/jetpack-compose/modifiers"
-import { useAppTheme } from "@/theme/context"
 
 import { useQueueService } from "@/services/queueService"
+import { LoadingScreen } from "@/components/LoadingScreen"
+import type { Game } from "@/services/api/types"
+import { colors } from "@/theme/colors"
 
 export function QueueScreen() {
-  const { queuedGames, availableGames, isLoading, chooseNextGame, removeFromQueue, moveInQueue } = useQueueService()
-
-  const theme = useAppTheme()
+  const { queuedGames, availableGames, isLoading, chooseNextGame } = useQueueService()
 
     if (isLoading) {
       return <LoadingScreen />
     }
 
-  return {
+  return (
     <Host style={{ flex: 1}}></Host>
-  }
+  )
 }
 
 ```
@@ -468,6 +473,7 @@ Below the screen component, create the `QueueCard`:
 function QueueCard({ game, index, total }: { game: Game; index: number; total: number }) {
   const isFirst = index === 0
   const isLast = index === total - 1
+  const { removeFromQueue, moveInQueue } = useQueueService()
 
   return (
     <ElevatedCard
@@ -495,7 +501,14 @@ That should get us a basic layout. Now we'll add more visuals and functionality 
 ```tsx
 {game.background_image ? (
   <RNHostView matchContents>
-    <ExpoImage source={game.background_image} style={$thumbnail} />
+    <ExpoImage
+      source={game.background_image}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 6,
+      }}
+    />
   </RNHostView>
 ) : null}
 ```
@@ -544,8 +557,7 @@ The colors of the components might not make a lot of sense yet. They're actually
 ```diff
 <Host
   style={{ flex: 1 }}
-  colorScheme={isDarkMode ? "dark" : "light"}
-+  seedColor={theme.colors.brandSurface}
++  seedColor={colors.brandSurface}
 >
 ```
 
@@ -588,25 +600,37 @@ import {
   IconButton,
 } from "@expo/ui/jetpack-compose"
 import { clickable, padding } from "@expo/ui/jetpack-compose/modifiers"
+import AddCircle from "@expo/material-symbols/add_circle.xml"
+import Remove from "@expo/material-symbols/remove.xml"
 
-import { LoadingScreen } from "@/components/LoadingScreen";
-
-import type { FeedGenre } from "@/services/api/games";
-import { useFavoriteGenresService } from "@/services/favoriteGenresService";
+import { useFeedGenres, type FeedGenre } from "@/services/api/games"
+import { useFavoriteGenres } from "@/stores/favoriteGenres"
+import { Screen } from "@/components/Screen"
+import { colors } from "@/theme/colors"
 
 export function FavoriteGenresScreen() {
+  const { data: allGenres = [], isLoading } = useFeedGenres()
+  const { ids: favoriteIds, addFavoriteGenre, removeFavoriteGenre } = useFavoriteGenres()
+
   if (isLoading) {
     return (
-      <Screen preset="fixed" contentContainerStyle={$centered}>
+      <Screen preset="fixed" contentContainerStyle={{ flex: 1 }}>
         <ActivityIndicator size="large" color={theme.colors.tint} />
       </Screen>
     )
   }
 
-    return (
-      <Host style={{ flex: 1 }}>
+  const favoriteGenres = favoriteIds
+    .map((id) => allGenres.find((g) => g.id === id))
+    .filter(Boolean) as FeedGenre[]
 
-      </Host>
+  const otherGenres = allGenres.filter((g) => !favoriteIds.includes(g.id))
+
+  return (
+    <Host style={{ flex: 1 }}>
+
+    </Host>
+  )
 }
 ```
 
@@ -627,8 +651,8 @@ export function FavoriteGenresScreen() {
       <ListItem.TrailingContent>
         <IconButton onClick={() => removeFavoriteGenre(genre.id)}>
           <Icon
-            source={require("../../assets/icons/remove-circle.xml")}
-            tint={theme.colors.error}
+            source={Remove}
+            tint={colors.error}
             size={24}
           />
         </IconButton>
@@ -652,8 +676,8 @@ export function FavoriteGenresScreen() {
       <ListItem.TrailingContent>
         <IconButton onClick={() => addFavoriteGenre(genre.id)}>
           <Icon
-            source={require("../../assets/icons/add-circle.xml")}
-            tint={theme.colors.brandAccent}
+            source={AddCircle}
+            tint={colors.brandAccent}
             size={24}
           />
         </IconButton>
@@ -696,4 +720,4 @@ In this case, we're using custom Android XML drawables for the add/remove button
 
 ## See the solution
 
-Switch to branch: [`01-blending-in-solution`](https://github.com/infinitered/cr-2024-intermediate-workshop-template/tree/01-blending-in-solution)
+Switch to branch: [`02-lists`](https://github.com/infinitered/cr-2026-intermediate-workshop-template/tree/02-lists)
