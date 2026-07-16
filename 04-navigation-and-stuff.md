@@ -213,11 +213,13 @@ export default function Stack() {
   return (
     <Stack>
 -      <Stack.Screen name="index" options={{ title: "Games"}} />
-+      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true, headerTransparent: true }} />
++      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true, headerTransparent: true, headerLargeTitleShadowVisible: true, }} />
     </Stack>
   )
 }
 ```
+
+(the shadow property seems to help with visability on the Games tab...I'm not sure why!)
 
 Repeat for the other two tabs.
 
