@@ -202,9 +202,9 @@ Repeat for "Queue" and "Settings".
 
 ### Large headers
 
-6. Before we move on, let's fix those 
+9. Before we move on, let's fix those 
 
-6. Add the large header option to each layout, like this. Also required for collapsing on scroll is making it transparent:
+10. Add the large header option to each layout, like this. Also required for collapsing on scroll is making it transparent:
 
 ```diff
 import { Stack } from "expo-router"
@@ -221,7 +221,7 @@ export default function Stack() {
 
 Repeat for the other two tabs.
 
-7. You might be wondering about the shrink-on-scroll of the header that you see in a lot of apps. We can do this, but theres's some requirements for it to recognize scroll activity. Inside **GameFeedScreen**, update the Scrollview to include this prop:
+11. You might be wondering about the shrink-on-scroll of the header that you see in a lot of apps. We can do this, but theres's some requirements for it to recognize scroll activity. Inside **GameFeedScreen**, update the Scrollview to include this prop:
 
 ```diff
 <ScrollView
@@ -231,7 +231,7 @@ Repeat for the other two tabs.
 
 This also takes care of keeping the content below the large header.
 
-8. The scrollview also needs to be the topmost element on the screen. Remove the `Screen` component:
+12. The scrollview also needs to be the topmost element on the screen. Remove the `Screen` component:
 
 ```diff
 - <Screen preset="fixed">
@@ -244,7 +244,7 @@ Repeat for each tab.
 
 🏃**Try it.**  Scrolling down should now minimize the header.
 
-9. On iOS, the header may overlap with the content. We can fix this by making the headers transparent. It doesn't give nearly as good of a result on Android, so let's make it platform specific:
+13. On iOS, the header may overlap with the content. We can fix this by making the headers transparent. It doesn't give nearly as good of a result on Android, so let's make it platform specific:
 
 ```diff
 import { Stack } from "expo-router"
@@ -260,6 +260,37 @@ export default function Stack() {
 ```
 
 🏃**Try it.**  Now the filter button fits in quite nicely with the new header effects
+
+### Oops, don't forget about dark mode!
+
+You might be wondering what to do about your light headers if you're on dark mode. The native stack includes themes that you can switch between at the root navigation level. You could customize the colors, of course, but these default themes would match the platform default, which is what we've been generally steering our app towards.
+
+14. In **src/app/_layout.tsx**, import the navigation theme provider and `useColorScheme`:
+
+```tsx
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
+} from "expo-router/react-navigation"
+import { useColorScheme } from "react-native"
+```
+
+15. Inside the layout component, grab the current OS color scheme:
+
+```tsx
+const colorScheme = useColorScheme() as "light" | "dark"
+```
+
+16. Inside the `SafeAreaProvider`, wrap the rest of the component tree with `NavigationThemeProvider`:
+
+```diff
+<SafeAreaProvider initialMetrics={initialWindowMetrics}>
++  <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <! -- etc -->
++  </NavigationThemeProvider>
+<SafeAreaProvider>
+```
 
 ## Exercise 3: Search Part 2
 
@@ -288,6 +319,10 @@ We have a hunch that we'll like this more on Android than iOS, but it kind of wo
 ```
 
 🏃**Try it.**  Check out the search bar in the header on Android. It also shows up on iOS, but below the header when you swipe down a bit.
+
+#### Bug alert!
+
+`Stack.SearchBar` doesn't seem to respect the OS light/dark theme. The Expo Router team is aware and working on a fix! Hang tight, we'll fix that bug in Exercise 5.
 
 ### The iOS search tab
 
@@ -506,7 +541,7 @@ const $heroImage: ImageStyle = {
 
 🏃**Try it.** A small tweak that helps a good bit!
 
-4. Let's get the image to actually take over the header by making it transparent. Add this just inside **src/app/game/[id].tsx**:
+5. Let's get the image to actually take over the header by making it transparent. Add this just inside **src/app/game/[id].tsx**:
 
 ```tsx
 <Stack.Screen
@@ -524,7 +559,7 @@ Don't forget to import `Platform` from `react-native` and `Stack` from `expo-rou
 
 🏃**Try it.** Looks cool, but what about the buttons?
 
-5. Add the buttons back as native stack toolbar buttons. This code goes right below `Stack.Screen`:
+6. Add the buttons back as native stack toolbar buttons. This code goes right below `Stack.Screen`:
 
 ```tsx
 {Platform.OS === "ios" && (
@@ -552,13 +587,13 @@ Also add an import to a Material Symbols share icon:
 import ShareAndroid from "@expo/material-symbols/share.xml"
 ```
 
-6. Remove the `useLayoutEffect` from **src/app/game/[id].tsx**.
+7. Remove the `useLayoutEffect` from **src/app/game/[id].tsx**.
 
 🏃**Try it.** Looks good, and works, too! Also a good opportunity to see what happens on Android. Android doesn't have the zoom transition, so leaving the header looks solid.
 
 ### A few more details
 
-7. Fix that Queue button in **GameDetailScreen** just by moving it to the bottom:
+8. Fix that Queue button in **GameDetailScreen** just by moving it to the bottom:
 
 ```diff
 const $queueOverlay: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -578,7 +613,7 @@ const $queueOverlay: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 
 ### One more screen!
 
-6. The zoom transition works from the Search tab, as well! Tweak **src/app/(tabs)/search/index.tsx**:
+9. The zoom transition works from the Search tab, as well! Tweak **src/app/(tabs)/search/index.tsx**:
 
 ```diff
 <RNHostView>
@@ -592,16 +627,175 @@ const $queueOverlay: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 </RNHostView>
 ```
 
-## Exercise 5: Android dynmaic/ Material You colors
+## Exercise 5: Android dynmaic colors
 
-You can access platform-native color pallettes via the `Color` API in `expo-router` [link](https://docs.expo.dev/router/reference/color/). This includes the static platform colors for iOS and Android. But, since the Jetpack Compose Expo UI components default to Material You on Android 12+ (where their colors adapt to your wallpaper background or a selection of a theme in the OS settings), we can use the `useMaterialColors` hook to access those directly.
+There's a few different ways change colors based on built-in themes. This works on iOS, but Android Material Design in particular makes use of OS-wide color themes and the ability to change them, so let's explore color API's here.
 
-OH WAIT, this is wrong, hang on...
+### Expo Router Color API
 
+A pretty straightforward way to access platform-native color pallettes via the `Color` API in `expo-router` [link](https://docs.expo.dev/router/reference/color/). This lets you use the colors with React Native core components and Expo UI.
+
+#### Fix that search bar dark mode bug!
+
+It's been bugging you, eh? We're going to fix it by using the `Color` API. It can provide us the current theme colors, so we can use those to directly "convert" a component that doesn't support dark mode to support dark mode.
+
+1. In **app/screens/GameFeedScreen.tsx**, import `Color` from `expo-router`, and tweak the `Stack.SearchBar` code to pull it's colors from dynamic colors when on Android:
+
+```diff
+<Stack.SearchBar
+  placeholder="Search games..."
+  onChangeText={(e) => setSearchQuery(e.nativeEvent.text)}
++  {...(Platform.OS === "android" && {
++    barTintColor: Color.android.dynamic.surfaceContainerHigh,
++    textColor: Color.android.dynamic.onSurface,
++    hintTextColor: Color.android.dynamic.onSurfaceVariant,
++    headerIconColor: Color.android.dynamic.onSurfaceVariant,
++    tintColor: Color.android.dynamic.primary,
+  })}
+/>
+```
+
+A reference to `useColorScheme` is needed to automatically react to light/dark changes, but that was already done in Exercise 2.
+
+🏃**Try it.** Change between light and dark mode. That search control should look a little better now on dark mode, and hopefully we didn't break light mode either
+
+### Adopting user-defined color theming
+
+In Android 12+, the OS color "theme" can change based on matching colors from the user's wallpaper, or by editing the theme in "Wallpaper & style" in Android settings. Note that these color groups are distinct from light/dark mode.
+
+Let's change most/all of the remaining "brand" theme colors on the Games tab to dynamic colors with the `Color` API.
+
+1. **app/components/GameCarouselCard.tsx** is already only used on Android, so it's OK to pin it to dynamic colors. Let's change the title backdrop. Import `Color` from `expo-router` and swap out the styles at the bottom with this:
+
+```tsx
+const $imagePlaceholder: ViewStyle = {
+  backgroundColor: Color.android.dynamic.surfaceContainerHigh,
+}
+
+const $overlay: ViewStyle = {
+  position: "absolute",
+  left: 0,
+  right: 0,
+  bottom: 0,
+  padding: 6,
+  backgroundColor: Color.android.dynamic.surfaceContainer,
+}
+
+const $overlayText: TextStyle = {
+  color: Color.android.dynamic.onSurface,
+}
+```
+
+Also remove `const { themed } = useAppTheme()` and any references to `themed`.
+
+2. Now, let's fork that Year badge so we can style it with dynamic colors for Android. Create a **app/components/YearBadge.android.tsx** file and copy the contents of **YearBadge.tsx** to it.
+
+3. One again, remove references to `themed` and swap out the styles:
+
+```tsx
+const $badge: ViewStyle = {
+  alignSelf: "flex-start",
+  backgroundColor: Color.android.dynamic.primaryContainer,
+  borderRadius: 16,
+  borderWidth: 2,
+  borderColor: Color.android.dynamic.outline,
+  paddingHorizontal: 12,
+  paddingVertical: 4,
+  marginBottom: 8,
+  marginLeft: 16,
+}
+
+const $badgeText = {
+  color: Color.android.dynamic.onPrimaryContainer,
+}
+```
+
+(also be sure to import `Color` from `expo-router`)
+
+🏃**Try it.** Change the color theme in "Wallpaper & style". Unfortunately, `useColorScheme` doesn't yet detect these changes, so you'll need to fully reload the app to see the theme changes take effect. (don't worry, Expo Router team is working on this, too!)
+
+### Default color behavior of Expo UI controls
+
+Expo UI controls that have a default color will use the dynamic colors. You may have already noticed this in the screens we refactored in Module 1 and 2.
+
+4. To address one of the last branded items we haven't yet transitioned to dynamic colors, go to **GameDetailScreen** and switch the Write a Review button to use Expo UI universal components:
+
+```tsx
+<Host matchContents>
+  <Button
+    label="Write A Review"
+    onPress={() =>
+      router.push({
+        pathname: "/review/[gameId]",
+        params: { gameId: id, gameName: game.name },
+      })
+    }
+  />
+</Host>
+```
+
+Import `Host` and `Button` from `@expo/ui`, and remove the other `Button` import.
+
+Also tweak the `$writeReviewSection` style to center that button:
+
+```diff
+const $writeReviewSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingHorizontal: spacing.lg,
+  paddingBottom: spacing.md,
++  alignItems: "center",
+```
+
+### Dynamic colors inside Expo UI (non-default behavior)
+
+For Expo UI components that don't use dynamic colors intrinsically. you can use the `useMaterialColors` hook to read the dynamic colors and apply them. Why a hook and not just the `Color` API? Hang tight.
+
+5. Let's convert **YearBadge.android.tsx** to use all Expo UI:
+
+```tsx
+import { Host, Text } from "@expo/ui/jetpack-compose"
+import { useMaterialColors } from "@expo/ui/jetpack-compose"
+import { background, clip, padding, Shapes } from "@expo/ui/jetpack-compose/modifiers"
+
+interface YearBadgeProps {
+  year: string
+}
+
+export function YearBadge({ year }: YearBadgeProps) {
+  const colors = useMaterialColors()
+
+  return (
+    <Host matchContents style={{ alignSelf: "flex-start", marginBottom: 8, marginLeft: 16 }}>
+      <Text
+        color={colors.onPrimaryContainer}
+        modifiers={[
+          clip(Shapes.RoundedCorner(16)),
+          background(colors.primaryContainer),
+          padding(12, 4, 12, 4),
+        ]}
+      >
+        {year}
+      </Text>
+    </Host>
+  )
+}
+
+```
+
+6. Now, suppose we wanted to do our branded colors in a sort of Material Design style? We can set a seed color in the hook:
+
+```diff
+-const colors = useMaterialColors()
++const colors = useMaterialColors({ seedColor: "#DBFF00" })
+```
+
+🏃**Try it.** The Year badge will now include a few variations on the original yellow theme.
 
 ## Side Quests
 
 - Experimental native stack: TBD
+
+## Errata
+- It looks like there's a bug with the color theme recognition on `Stack.SearchBar` (I reported it!). You can still workaround this by applying theme colors to the `textColor` and `headerIconColor` props.
 
 ## See the solution
 
