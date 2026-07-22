@@ -1,4 +1,4 @@
-# Module 03: Cutting across routes - native navigation and other things
+# Module 04: Cutting across routes - native navigation and other things
 
 ### Goal
 
@@ -11,6 +11,15 @@ Let's use Expo Router-specific native UI functionality to adopt modern platform-
 - Platform native shared element transitions
 - Android dynamic colors
 
+### New components
+
+- [Native Tabs]()
+- [Color]()
+- [Stack.Toolbar]()
+- [Stack.SearchBar]()
+- [Link.AppleZoom]()
+- [Color]()
+
 ### Features to build
 
 - Add native tabs
@@ -21,7 +30,8 @@ Let's use Expo Router-specific native UI functionality to adopt modern platform-
 
 ### Resources
 
-- TBD
+- [Native tabs guide](https://docs.expo.dev/router/advanced/native-tabs/)
+- [Expo Router native features](https://expo.dev/changelog/sdk-55#more-native-features-in-expo-router)
 
 # Exercises
 
