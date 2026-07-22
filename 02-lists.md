@@ -6,8 +6,22 @@ Expo UI lets you tap into all those micro-interactions that come with platform-n
 
 ### Concepts
 
-- something
-- something else
+- Using Expo UI list controls
+- Using the standard list row components
+- Fully-customizing components in Expo UI
+
+### New components
+
+- Jetpack Compose:
+  - [LazyColumn]()
+  - [ElevatedCard]()
+  - [Row]()
+  - [IconButton]()
+- Swift UI:
+  - [List]()
+  - [Section]()
+  - [LabeledContent]()
+  - [VStack]() and [HStack]()
 
 ### Features to build
 
@@ -15,8 +29,8 @@ Expo UI lets you tap into all those micro-interactions that come with platform-n
 - Update queue and filter lists to use native list controls with sorting and deletion gestures
 
 ### Resources
-
-TBD
+- [Expo UI Jetpack Compose modifiers]()
+- [Expo UI SwiftUI modifiers]()
 
 # Exercises
 
