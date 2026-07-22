@@ -13,15 +13,15 @@ Expo UI lets you tap into all those micro-interactions that come with platform-n
 ### New components
 
 - Jetpack Compose:
-  - [LazyColumn]()
-  - [ElevatedCard]()
-  - [Row]()
-  - [IconButton]()
+  - [LazyColumn](https://docs.expo.dev/versions/latest/sdk/ui/jetpack-compose/lazycolumn/)
+  - [ElevatedCard](https://docs.expo.dev/versions/latest/sdk/ui/jetpack-compose/card/)
+  - [Row](https://docs.expo.dev/versions/latest/sdk/ui/jetpack-compose/row/)
+  - [IconButton](https://docs.expo.dev/versions/latest/sdk/ui/jetpack-compose/iconbutton/)
 - Swift UI:
-  - [List]()
-  - [Section]()
-  - [LabeledContent]()
-  - [VStack]() and [HStack]()
+  - [List](https://docs.expo.dev/versions/latest/sdk/ui/swift-ui/list/)
+  - [Section](https://docs.expo.dev/versions/latest/sdk/ui/swift-ui/section/)
+  - [LabeledContent](https://docs.expo.dev/versions/latest/sdk/ui/swift-ui/label/)
+  - [VStack](https://docs.expo.dev/versions/latest/sdk/ui/swift-ui/vstack/) and [HStack](https://docs.expo.dev/versions/latest/sdk/ui/swift-ui/hstack/)
 
 ### Features to build
 
@@ -29,8 +29,8 @@ Expo UI lets you tap into all those micro-interactions that come with platform-n
 - Update queue and filter lists to use native list controls with sorting and deletion gestures
 
 ### Resources
-- [Expo UI Jetpack Compose modifiers]()
-- [Expo UI SwiftUI modifiers]()
+- [Expo UI Jetpack Compose modifiers](https://docs.expo.dev/versions/latest/sdk/ui/jetpack-compose/modifiers/)
+- [Expo UI SwiftUI modifiers](https://docs.expo.dev/versions/latest/sdk/ui/swift-ui/modifiers/)
 
 # Exercises
 

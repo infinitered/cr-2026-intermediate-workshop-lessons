@@ -13,12 +13,12 @@ Let's use Expo Router-specific native UI functionality to adopt modern platform-
 
 ### New components
 
-- [Native Tabs]()
-- [Color]()
-- [Stack.Toolbar]()
-- [Stack.SearchBar]()
-- [Link.AppleZoom]()
-- [Color]()
+- [Native Tabs](https://docs.expo.dev/versions/latest/sdk/router/native-tabs/)
+- [Color](https://docs.expo.dev/versions/latest/sdk/router/color/)
+- [Stack.Toolbar](https://docs.expo.dev/versions/latest/sdk/router/stack/)
+- [Stack.SearchBar](https://docs.expo.dev/versions/latest/sdk/router/stack/)
+- [Link.AppleZoom](https://docs.expo.dev/versions/latest/sdk/router/link/)
+- [Color](https://docs.expo.dev/versions/latest/sdk/router/color/)
 
 ### Features to build
 
@@ -806,7 +806,73 @@ With a larger Expo UI component tree, you can also set `seedColor` on `Host`, an
 
 ## Side Quests
 
-- Experimental native stack: TBD
+### Experimental native stack
+
+The `react-native-screens` team is working on the next generation of platform-native navigation primitives [here](https://github.com/software-mansion/react-native-screens/tree/main/src/fabric/gamma). This includes things like the long-sought-after iOS split view (think iPad screen with a list on the left and content on the right) and a new stack that's designed to fully-account for safe areas, support Android predictive back, and more.
+
+The [Experimental stack](https://docs.expo.dev/versions/latest/sdk/router/experimental-stack/) isn't something you'd want to start using right away, as it doesn't support most Stack customizations. But it's good to see what's on the horizon.
+
+#### Convert everything over
+In general, it's intended that you'll convert to the new stack in a piecemeal fashion, but the current alpha requires that you convert all stacks over, so we'll do that.
+
+1. In any **_layout.tsx** files with a `Stack`, convert it to the new stack like so:
+
+```diff
+-import { Stack } from "expo-router"
++import { ExperimentalStack as Stack } from 'expo-router';
+
+export default function Layout() {
+  return (
+    <Stack>
+      <Stack.Screen name="index" options={{ title: "Queue"}} />
+    </Stack>
+  )
+}
+```
+
+2. The only supported parameters at the moment are:
+
+- title
+- headerShown
+- headerTransparent
+- headerBackVisible
+
+See how close you can get to what you had before with just those.
+
+You can also customize the back button like this:
+
+```tsx
+import { Stack } from 'expo-router';
+
+export default function Layout() {
+  return (
+    <Stack>
+      <Stack.Screen name="detail">
+        <Stack.Screen.BackButton displayMode="minimal">Back</Stack.Screen.BackButton>
+      </Stack.Screen>
+    </Stack>
+  );
+}
+```
+
+3. How are your safe areas that we set previously when adding native tabs looking? Are they double-counted now? The new stack supports safe area avoidance of things like native tabs automatically. See if you can remove some of the paddings we added before.
+
+4. [Android predictive back](https://adiandrea.medium.com/predictive-back-gesture-on-android-31610b1b58b7) allows the user to see the previous screen before committing to going back. Let's implement it in **app.json**:
+
+```diff
+"android": {
+    "icon": "./assets/images/app-icon-android-legacy.png",
+    "package": "com.infinitered.cr2026intermediateworkshop",
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/images/app-icon-android-adaptive-foreground.png",
+      "backgroundImage": "./assets/images/app-icon-android-adaptive-background.png"
+    },
+    "allowBackup": false
++.  "predictiveBackGestureEnabled": true
+  },
+```
+
+Then run `npx expo prebuild --clean` and `npx expo run:android` to try it out.
 
 ## Errata
 - It looks like there's a bug with the color theme recognition on `Stack.SearchBar` (I reported it!). You can still workaround this by applying theme colors to the `textColor` and `headerIconColor` props.
