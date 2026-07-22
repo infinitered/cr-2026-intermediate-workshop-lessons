@@ -11,18 +11,22 @@ Expo UI is a great choice for forms. We can often change these to look more like
 
 ### New components
 
-TODO: add a little description for all the new Expo UI components used.
+- [Expo UI Universal Components](https://docs.expo.dev/versions/latest/sdk/ui/universal/) - safe and nice defaults that adopt the native look and feel for Android and iOS, and look good on web, too!
+- Jetpack Compose:
+   - [DateTimePicker](https://docs.expo.dev/versions/latest/sdk/ui/jetpack-compose/datetimepicker/)
+   - [ExposedDropDownMenuBox](https://docs.expo.dev/versions/latest/sdk/ui/jetpack-compose/exposeddropdownmenubox/)
+   - [TextPicker](https://docs.expo.dev/versions/latest/sdk/ui/jetpack-compose/textfield/)
+- Swift UI:
+   - [DatePicker](https://docs.expo.dev/versions/latest/sdk/ui/swift-ui/datepicker/)
+   - [Picker](https://docs.expo.dev/versions/latest/sdk/ui/swift-ui/picker/)
 
+### Resources
+- [Expo local build setup](https://docs.expo.dev/guides/local-app-development/) (if you need to check your Android Studio / XCode config)
 
 ### Features to build
 
 - First pass on the Settings screen with Expo UI univeral controls
 - Create our own controls based on Expo UI platform-specific bindings for the date picker and dropdown.
-
-### Resources
-
-- [React Native docs](https://reactnative.dev/docs/0.85/components-and-apis)
-- [Expo UI universal controls](https://docs.expo.dev/versions/latest/sdk/ui/universal/)
 
 # Exercises
 
@@ -213,7 +217,7 @@ import { datePickerStyle } from "@expo/ui/swift-ui/modifiers"
 
 🏃**Try it.** Don't load it on Android yet, it'll crash!
 
-### Android DatePicker
+### Android DateTimePicker
 
 Android's date picker is really just a dialog, so our major customization here will be adding the field group row UI.
 
