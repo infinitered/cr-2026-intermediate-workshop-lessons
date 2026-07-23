@@ -378,7 +378,7 @@ import {
   Text,
   VStack,
 } from "@expo/ui/swift-ui"
-import { buttonStyle, font, foregroundStyle, frame, listStyle } from "@expo/ui/swift-ui/modifiers"
+import { buttonStyle, clipShape, font, foregroundStyle, frame, listStyle } from "@expo/ui/swift-ui/modifiers"
 
 import { useGamesByYear } from "@/services/api/games"
 import type { Game } from "@/services/api/types"
@@ -624,6 +624,22 @@ const $queueOverlay: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 ### One more screen!
 
 9. The zoom transition works from the Search tab, as well! Tweak **src/app/(tabs)/search/index.tsx**:
+
+Modify the main `<SearchScreen />` to wrap the `<Button />` with `<Link />`:
+
+```diff
++<Link key={game.id} href={`/game/${game.id}`} asChild>
+  <Button
+-    key={game.id}
+-    onPress={() => router.push(`/game/${game.id}`)}
+    modifiers={[buttonStyle("plain")]}
+  >
+    <SearchRow game={game} />
+  </Button>
++</Link>
+```
+
+Modify the `<SearchRow />`:
 
 ```diff
 <RNHostView>
