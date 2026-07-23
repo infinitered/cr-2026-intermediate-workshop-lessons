@@ -52,7 +52,7 @@ export default function TabsLayout() {
 2. Each tab is represented in here as a tab trigger. The name of the trigger must match the route name. Add these inside `<NativeTabs>`:
 
 ```tsx
-<NativeTabs.Trigger name="index">
+<NativeTabs.Trigger name="(home)">
   <NativeTabs.Trigger.Label>Games</NativeTabs.Trigger.Label>
 </NativeTabs.Trigger>
 
@@ -68,7 +68,7 @@ export default function TabsLayout() {
 3. We will want to follow platform conventions for the tab icons. iOS strongly encourages use of SF Symbols:
 
 ```diff
-<NativeTabs.Trigger name="(home)/index">
+<NativeTabs.Trigger name="(home)">
 +  <NativeTabs.Trigger.Icon sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }} />
   <NativeTabs.Trigger.Label>Games</NativeTabs.Trigger.Label>
 </NativeTabs.Trigger>
@@ -91,7 +91,7 @@ Using separate "fill" icons give the selection state a distinct iOS look.
 4. We can just as easily use built-in Material Design icons on Android:
 
 ```diff
-<NativeTabs.Trigger name="index">
+<NativeTabs.Trigger name="(home)">
 -  <NativeTabs.Trigger.Icon sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }} />
 +  <NativeTabs.Trigger.Icon md="sports_esports" sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }} />
   <NativeTabs.Trigger.Label>Games</NativeTabs.Trigger.Label>
@@ -108,7 +108,7 @@ Using separate "fill" icons give the selection state a distinct iOS look.
 + <NativeTabs.Trigger.Icon md="settings" sf={{ default: "gearshape", selected: "gearshape.fill" }} />
   <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
 </NativeTabs.Trigger>
-``
+```
 
 > No shortage of options for Material Design icons, either! Check them out here: TODO
 
@@ -118,9 +118,9 @@ Using separate "fill" icons give the selection state a distinct iOS look.
 
 You might be happy that the native tabs are up, but maybe a little less happy with the missing navigation headers and content flowing under the safe areas. We're going to a do a little prep first so we can make all the changes we need.
 
-In particular, with the native tabs, we no longer get the option of configuring a per-tab JS stack, so now we need to do the same thing we did with the Games tab with every tab. These stacks within tabs might not be useful yet in our app for anything other than apperances, but having a stack outside the tabs and inside the tabs is a common high-leverage design pattern for Expo Router, so you'll quite likey use this in the future.
+In particular, with the native tabs, we no longer get the option of configuring a per-tab JS stack, so now we need to do the same thing we did with the Games tab with every tab. These stacks within tabs might not be useful yet in our app for anything other than appearances, but having a stack outside the tabs and inside the tabs is a common high-leverage design pattern for Expo Router, so you'll quite likely use this in the future.
 
-1. Create the following three folders inside **src/app/tabs**:
+1. Create the following two folders inside **src/app/tabs**:
 - queue
 - settings
 
@@ -147,7 +147,7 @@ export default function Stack() {
   return (
     <Stack>
 -      <Stack.Screen name="index" />
-+      <Stack.Screen name="index" options={{ title: "Games"}} />
++      <Stack.Screen name="index" options={{ title: "Games" }} />
     </Stack>
   )
 }
@@ -195,8 +195,8 @@ Repeat for "Queue" and "Settings".
 // ...
 +const { bottom } = useSafeAreaInsets()
 // ...
--<View style={[themed($bottomButton)}]}>
-+<View style={[themed($bottomButton), { paddingBottom: bottom + 16 }]}>
+-<Screen preset="fixed" contentContainerStyle={$styles.flex1}>
++<ScrollView style={[themed($bottomButton), { paddingBottom: bottom + 16 }]}>
 ```
 
 8. Add some bottom padding in **SettingsScreen.tsx**:
@@ -206,8 +206,8 @@ Repeat for "Queue" and "Settings".
 // ...
 +const { bottom } = useSafeAreaInsets()
 // ...
--<Screen preset="scroll" contentContainerStyle={[themed($container)]}>
-+<Screen preset="scroll" contentContainerStyle={[themed($container), { paddingBottom: bottom }]}>
+-<Screen preset="fixed" contentContainerStyle={{ flex: 1 }}>
++<ScrollView contentContainerStyle={{ flex: 1, paddingBottom: bottom + 16 }}>
 ```
 
 ### Large headers
@@ -229,11 +229,11 @@ export default function Stack() {
 }
 ```
 
-(the shadow property seems to help with visability on the Games tab...I'm not sure why!)
+(the shadow property seems to help with visibility on the Games tab...I'm not sure why!)
 
 Repeat for the other two tabs.
 
-11. You might be wondering about the shrink-on-scroll of the header that you see in a lot of apps. We can do this, but theres's some requirements for it to recognize scroll activity. Inside **GameFeedScreen**, update the Scrollview to include this prop:
+11. You might be wondering about the shrink-on-scroll of the header that you see in a lot of apps. We can do this, but theres's some requirements for it to recognize scroll activity. Inside **GameFeedScreen**, update the ScrollView to include this prop:
 
 ```diff
 <ScrollView
@@ -243,14 +243,14 @@ Repeat for the other two tabs.
 
 This also takes care of keeping the content below the large header.
 
-12. The scrollview also needs to be the topmost element on the screen. Remove the `Screen` component:
+12. The ScrollView also needs to be the topmost element on the screen. Remove the `Screen` component:
 
 ```diff
 - <Screen preset="fixed">
 + <>
 ```
 
-Also, move all the `Stack.Toolbar` stuff below the `ScrollView` (not sure why, but let's go with it - the scroll view is technically supported to be the top-level control, anyway)
+Also, move the `FilterMenu` stuff below the `ScrollView` (not sure why, but let's go with it - the scroll view is technically supported to be the top-level control, anyway)
 
 Repeat for each tab.
 
@@ -312,23 +312,20 @@ That stray search button is probably really gnawing at you right now. Fortunatel
 
 We have a hunch that we'll like this more on Android than iOS, but it kind of works for both, so let's give it a go.
 
-1. Add the `Stack.SearchBar` component next to the other `Stack.Toolbar` components, inside the `<>`:
+1. Inside the `FeedSearch` component, return the `Stack.SearchBar` component:
 
 ```tsx
-<Stack.SearchBar
-  placeholder="Search games..."
-  onChangeText={(e) => setSearchQuery(e.nativeEvent.text)}
-/>
+export function FeedSearch({ searchQuery, onChangeText }: FeedSearchProps) {
+  return (
+    <Stack.SearchBar
+      placeholder="Search games..."
+      onChangeText={(e) => onChangeText(e.nativeEvent.text)}
+    />
+  )
+}
 ```
 
-2. Remove the `FeedSearch` component to get rid of the old Android search bar.
-
-3. Remove the whole `Stack.Toolbar` conditional section that starts with this to remove the old iOS search bar:
-
-```tsx
-{Platform.OS !== "android" && (
-        <Stack.Toolbar placement="bottom">
-```
+2. Delete the `FeedSearch` platform specific files, `FeedSearch.android.tsx` and `FeedSearch.ios.tsx`.
 
 🏃**Try it.**  Check out the search bar in the header on Android. It also shows up on iOS, but below the header when you swipe down a bit.
 
@@ -381,7 +378,7 @@ import {
   Text,
   VStack,
 } from "@expo/ui/swift-ui"
-import { buttonStyle, font, foregroundStyle, listStyle } from "@expo/ui/swift-ui/modifiers"
+import { buttonStyle, font, foregroundStyle, frame, listStyle } from "@expo/ui/swift-ui/modifiers"
 
 import { useGamesByYear } from "@/services/api/games"
 import type { Game } from "@/services/api/types"
@@ -562,6 +559,7 @@ const $heroImage: ImageStyle = {
     ...(Platform.OS === "ios"
       ? { headerTransparent: true, title: "" }
       : { headerShown: true }),
+    headerBackTitle: "Back",
   }}
 />
 ```
@@ -611,7 +609,7 @@ import ShareAndroid from "@expo/material-symbols/share.xml"
 const $queueOverlay: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   position: "absolute",
 -  top: spacing.xs,
-+  top: spacing.sx,
++  bottom: spacing.xs,
   right: spacing.xs,
   flexDirection: "row",
   alignItems: "center",
@@ -639,7 +637,7 @@ const $queueOverlay: ThemedStyle<ViewStyle> = ({ spacing }) => ({
 </RNHostView>
 ```
 
-## Exercise 5: Android dynmaic colors
+## Exercise 5: Android dynamic colors
 
 There's a few different ways change colors based on built-in themes. This works on iOS, but Android Material Design in particular makes use of OS-wide color themes and the ability to change them, so let's explore color API's here.
 
@@ -651,7 +649,7 @@ A pretty straightforward way to access platform-native color pallettes via the `
 
 It's been bugging you, eh? We're going to fix it by using the `Color` API. It can provide us the current theme colors, so we can use those to directly "convert" a component that doesn't support dark mode to support dark mode.
 
-1. In **app/screens/GameFeedScreen.tsx**, import `Color` from `expo-router`, and tweak the `Stack.SearchBar` code to pull it's colors from dynamic colors when on Android:
+1. In **app/components/FeedSearch.tsx**, import `Color` from `expo-router`, and tweak the `Stack.SearchBar` code to pull it's colors from dynamic colors when on Android:
 
 ```diff
 <Stack.SearchBar
@@ -717,7 +715,7 @@ const $badge: ViewStyle = {
   marginLeft: 16,
 }
 
-const $badgeText = {
+const $badgeText: TextStyle = {
   color: Color.android.dynamic.onPrimaryContainer,
 }
 ```
@@ -733,7 +731,7 @@ Expo UI controls that have a default color will use the dynamic colors. You may 
 4. To address one of the last branded items we haven't yet transitioned to dynamic colors, go to **GameDetailScreen** and switch the Write a Review button to use Expo UI universal components:
 
 ```tsx
-<Host matchContents>
+<Host matchContents style={$writeReviewSection}>
   <Button
     label="Write A Review"
     onPress={() =>
@@ -750,16 +748,26 @@ Import `Host` and `Button` from `@expo/ui`, and remove the other `Button` import
 
 Also tweak the `$writeReviewSection` style to center that button:
 
+```tsx
+const $writeReviewSection: ViewStyle = {
+  alignItems: "center",
+}
+```
+
+We also need to fix the bottom padding on this screen, like we saw earlier in the module on the main tabs:
+
 ```diff
-const $writeReviewSection: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingHorizontal: spacing.lg,
-  paddingBottom: spacing.md,
-+  alignItems: "center",
++import { useSafeAreaInsets } from "react-native-safe-area-context"
+// ...
++const { bottom } = useSafeAreaInsets()
+// ...
+-<Screen preset="scroll">
++<Screen preset="scroll" style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: bottom + 16 }}>
 ```
 
 ### Dynamic colors inside Expo UI (non-default behavior)
 
-For Expo UI components that don't use dynamic colors intrinsically. you can use the `useMaterialColors` hook to read the dynamic colors and apply them. Why a hook and not just the `Color` API? Hang tight.
+For Expo UI components that don't use dynamic colors intrinsically. You can use the `useMaterialColors` hook to read the dynamic colors and apply them. Why a hook and not just the `Color` API? Hang tight.
 
 5. Let's convert **YearBadge.android.tsx** to use all Expo UI:
 
@@ -790,7 +798,6 @@ export function YearBadge({ year }: YearBadgeProps) {
     </Host>
   )
 }
-
 ```
 
 6. Now, suppose we wanted to do our branded colors in a sort of Material Design style? We can set a seed color in the hook:
