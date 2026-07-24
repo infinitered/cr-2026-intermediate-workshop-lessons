@@ -33,12 +33,7 @@ Then we'll build the receiving screen with the same Expo UI universal controls f
 - An "Add a Game" screen that reads the shared image and collects a title, year, and genre
 - A native close button in the header
 
-# Exercises
-
-## Exercise 0: Build the app (if you haven't already)
-
-1. Run `pnpm install`
-2. Run `npx expo run:ios` or `npx expo run:android`
+### Notes
 
 > Heads up: a share extension is _native_ code. If you were starting from a bare template you'd have to prebuild before the extension would show up in the share sheet. We've already wired all of that up for you (see the next section), so a normal dev-client build is all you need.
 
@@ -116,6 +111,8 @@ export function redirectSystemPath({ path, initial }: { path: string; initial: b
 So the whole trip is: **share sheet → native extension → deep link → `+native-intent` → `/shared` route.** Everything from here on out is plain React we get to write ourselves.
 
 🏃**Try it.** Before writing any screen code, open Photos on your simulator, pick an image, tap the share button, and find your app in the share sheet. It'll open the app to a blank `/shared` route for now. That's the native half working end to end.
+
+# Exercises
 
 ## Exercise 1: The share route
 
