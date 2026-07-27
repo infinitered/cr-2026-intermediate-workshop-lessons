@@ -25,8 +25,9 @@ Expo UI lets you tap into all those micro-interactions that come with platform-n
 
 ### Features to build
 
-- Update Settings screen controls
-- Update queue and filter lists to use native list controls with sorting and deletion gestures
+- Update Favorite Genres screen on iOS with basic list item components and delete gesture
+- Update iOS Queue tab with list sorting and deleting, creating a custom list item UI using Swift UI
+- Convert Android Queue tab to Jetpack Compose, but keep a similar UI
 
 ### Resources
 - [Expo UI Jetpack Compose modifiers](https://docs.expo.dev/versions/latest/sdk/ui/jetpack-compose/modifiers/)
