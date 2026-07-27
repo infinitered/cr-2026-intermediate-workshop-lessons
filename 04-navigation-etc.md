@@ -364,6 +364,7 @@ export default function Layout() {
 
 <details>
   <summary>Expand for all the code</summary>
+
 ```tsx
 import { useMemo, useState } from "react"
 import { Image, View } from "react-native"
@@ -896,6 +897,73 @@ export default function Layout() {
 ```
 
 Then run `npx expo prebuild --clean` and `npx expo run:android` to try it out.
+
+### Custom XML icon for Android tab bar
+
+Native tabs can use custom icons. Here's an example.
+
+1. Download the **nes_controller.xml** and put it inside **assets/icons**
+
+2. Add this config plugin to the **plugins* folder. This is needed to copy the icon to the native project as a resource:
+
+```tsx
+import { ConfigPlugin, withDangerousMod } from "@expo/config-plugins"
+import * as fs from "fs"
+import * as path from "path"
+
+/**
+ * Copies XML vector drawables from assets/icons into Android drawable resources.
+ */
+const withAndroidDrawable: ConfigPlugin = (config) => {
+  return withDangerousMod(config, [
+    "android",
+    (config) => {
+      const drawableDir = path.join(
+        config.modRequest.platformProjectRoot,
+        "app",
+        "src",
+        "main",
+        "res",
+        "drawable",
+      )
+
+      if (!fs.existsSync(drawableDir)) {
+        fs.mkdirSync(drawableDir, { recursive: true })
+      }
+
+      const iconsDir = path.join(config.modRequest.projectRoot, "assets", "icons")
+      if (!fs.existsSync(iconsDir)) return config
+
+      const xmlFiles = fs.readdirSync(iconsDir).filter((f) => f.endsWith(".xml"))
+      for (const file of xmlFiles) {
+        fs.copyFileSync(path.join(iconsDir, file), path.join(drawableDir, file))
+      }
+
+      return config
+    },
+  ])
+}
+
+export default withAndroidDrawable
+```
+
+3. Add `"./plugins/withAndroidDrawable",` to the `plugins` list in **app.config.ts*
+
+4. Change the icon in **src/app/(tabs)/_layout.tsx**
+
+```diff
+<NativeTabs>
+<NativeTabs.Trigger name="index">
+  <NativeTabs.Trigger.Icon
+    sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }}
+-    md="sports_esports"
++.   drawable="nes_controller"
+  />
+  <NativeTabs.Trigger.Label>Games</NativeTabs.Trigger.Label>
+</NativeTabs.Trigger>
+```
+
+5. Run `npx expo prebuild --clean` and then `npx expo run:android`.
 
 ## Errata
 - It looks like there's a bug with the color theme recognition on `Stack.SearchBar` (I reported it!). You can still workaround this by applying theme colors to the `textColor` and `headerIconColor` props.
