@@ -120,7 +120,7 @@ You might be happy that the native tabs are up, but maybe a little less happy wi
 
 In particular, with the native tabs, we no longer get the option of configuring a per-tab JS stack, so now we need to do the same thing we did with the Games tab with every tab. These stacks within tabs might not be useful yet in our app for anything other than appearances, but having a stack outside the tabs and inside the tabs is a common high-leverage design pattern for Expo Router, so you'll quite likely use this in the future.
 
-1. Create the following two folders inside **src/app/tabs**:
+1. Create the following two folders inside **src/app/(tabs)**:
 - queue
 - settings
 
@@ -143,7 +143,7 @@ export default function Layout() {
 ```diff
 import { Stack } from "expo-router"
 
-export default function Stack() {
+export default function Layout() {
   return (
     <Stack>
 -      <Stack.Screen name="index" />
@@ -219,7 +219,7 @@ Repeat for "Queue" and "Settings".
 ```diff
 import { Stack } from "expo-router"
 
-export default function Stack() {
+export default function Layout() {
   return (
     <Stack>
 -      <Stack.Screen name="index" options={{ title: "Games"}} />
@@ -261,7 +261,7 @@ Repeat for each tab.
 ```diff
 import { Stack } from "expo-router"
 
-export default function Stack() {
+export default function Layout() {
   return (
     <Stack>
 -      <Stack.Screen name="index" options={{ title: "Games", headerLargeTitle: true, headerTransparent: true }} />
@@ -970,4 +970,4 @@ export default withAndroidDrawable
 
 ## See the solution
 
-Switch to branch: [`01-blending-in-solution`](https://github.com/infinitered/cr-2024-intermediate-workshop-template/tree/01-blending-in-solution)
+Switch to branch: [`04-navigation`](https://github.com/infinitered/cr-2026-intermediate-workshop-template/tree/04-navigation)

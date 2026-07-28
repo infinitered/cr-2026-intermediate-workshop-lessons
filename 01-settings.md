@@ -25,7 +25,7 @@ Expo UI is a great choice for forms. We can often change these to look more like
 
 ### Features to build
 
-- First pass on the Settings screen with Expo UI univeral controls
+- First pass on the Settings screen with Expo UI universal controls
 - Create our own controls based on Expo UI platform-specific bindings for the date picker and dropdown.
 
 # Exercises
@@ -59,7 +59,7 @@ import { Host, FieldGroup, TextInput, Switch, Slider, Button, Picker, Row, Colum
 Add the host inside of screen, and the field group (all the controls go inside there, this helps lay them out):
 
 ```diff
-<Screen preset="fixed" contentContainerStyle={$screenContent}>
+<Screen preset="fixed" contentContainerStyle={{ flex: 1 }}>
 +   <Host style={{ flex: 1 }}>
 +      <FieldGroup>
 
@@ -146,6 +146,8 @@ We're ignoring the birth date field because there's no date picker in the univer
   />
 </FieldGroup.Section>
 ```
+
+(make sure to `import { router } from "expo-router"`)
 
 🏃**Try it.** Load that up on Android and iOS. Looks pretty good! That switch is ehhh on Android, maybe we'll work on that later.
 
@@ -287,7 +289,7 @@ Android's date picker is really just a dialog, so our major customization here w
 </Row>
 ```
 
-7. Make the dialog display conditional and dismiss it whene selecting a date or tapping away from it:
+7. Make the dialog display conditional and dismiss it when selecting a date or tapping away from it:
 
 ```diff
 +{showDialog && (
@@ -309,7 +311,7 @@ Android's date picker is really just a dialog, so our major customization here w
 
 The State field is currently a text box, but there's only 50 states, so that could definitely be a picker control of some sort.
 
-Like with the date picker, we'll implement our own this time. And lke the date picker, there's a little more elbow grease to apply this time.
+Like with the date picker, we'll implement our own this time. And like the date picker, there's a little more elbow grease to apply this time.
 
 1. In the **app/components** folder, let's create our platform-specific files (we only need them and not the fallback since we're not targeting web). These will be: **Dropdown.android.tsx** and **Dropdown.ios.tsx**.
 
@@ -538,7 +540,7 @@ import ArrowDownward from "@expo/material-symbols/arrow_drop_down.xml"
 
 Notice that we kind of broke the "universal" nature of our app with the DatePicker and Dropdown controls- they no longer support web!
 
-It's not big deal for us because we're just planning on targeting mobile, but you can fix it. If you add a plain **DatePicker.tsx** or **Picker.tsx**, that will be the fallback implementation when the ios and android suffixed files are not in use.
+It's not a big deal for us because we're just planning on targeting mobile, but you can fix it. If you add a plain **DatePicker.tsx** or **Picker.tsx**, that will be the fallback implementation when the ios and android suffixed files are not in use.
 
 Suggestions:
 - For the DatePicker, use the old one from before we converted the Settings screen.
