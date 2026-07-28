@@ -147,7 +147,7 @@ Let's improve the delete interaction by making it a little more obvious. Swift U
 5. Now deletion has the icon you can tap on the left as well as the confirmation step. But it also has sort handles, which we don't need here. Let's remove that with a modifier:
 
 ```diff
-<List.ForEach onDelete={handleDelete}>
+<List.ForEach onDelete={/* ... */}>
   {favoriteGenres.map((genre) => (
     <Label
       key={genre.id}
@@ -220,6 +220,7 @@ import {
   Button,
   HStack,
   VStack,
+  Spacer,
   Text as SwiftText,
   RNHostView,
 } from "@expo/ui/swift-ui"
@@ -251,7 +252,16 @@ export function QueueScreen() {
 
 ```tsx
 <List>
-  <List.ForEach onDelete={handleDelete} onMove={handleMove}>
+  <List.ForEach
+    onDelete={(indices) => {
+              indices.forEach((index) => removeFromQueue(queuedGames[index].id))
+            }}
+    onMove={(sourceIndices, destination) => {
+      sourceIndices.forEach((index) =>
+        moveInQueue(queuedGames[index].id, destination > index ? "down" : "up"),
+      )
+    }}
+  >
     {queuedGames.map((game, index) => (
       <HStack
         key={game.id}
@@ -599,7 +609,7 @@ Set the theme for the color of the icon button:
 
 ## Style sync-up for Android on the favorite genres screen
 
-Let's do something to make that Favorite Genres screen a little more Jetpack-composey, even though they'res not much special we can do there. We'll use `ListItem` to experiment with the standardized controls for making items in lists, typical in things like settings menus.
+Let's do something to make that Favorite Genres screen a little more Jetpack-composey, even though there's not really much new functionality we can add there. We'll use `ListItem` to experiment with the standardized controls for making items in lists, typical in things like settings menus.
 
 1. Create a new **FavoriteGenres.android.tsx** next to the others. Fill it with some boilerplate:
 
@@ -724,10 +734,10 @@ In this case, we're using custom Android XML drawables for the add/remove button
 <HorizontalDivider modifiers={[padding(0, 8, 0, 8)]} />
 ```
 
-5. Then fix the padding on the list iself so the headers aren't squished up against the edge:
+5. Then fix the padding on the list itself so the headers aren't squished up against the edge:
 
 ```diff
--<LazyColumn contentPadding={{ start: 16, end: 16, bottom: 24 }}>
+-<LazyColumn>
 +<LazyColumn contentPadding={{ start: 16, end: 16, bottom: 24 }}>
 ```
 
