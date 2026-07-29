@@ -3,6 +3,7 @@
 Workshop exercises for the Chain React 2026 Intermediate Workshop.
 
 ## Slides
+[https://docs.google.com/presentation/d/1vJfKWNRV3RBnyy_zcZtWgIPbgDNvjqIEJyzrT_5VZ_M/edit?usp=sharing](slides)
 
 ## Contact
 - [Find me on Expo Discord](https://chat.expo.dev) - I'm "keith".
