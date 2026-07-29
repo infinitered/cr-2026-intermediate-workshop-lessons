@@ -609,6 +609,7 @@ Now the loop is closed: the menu's "View Options" row calls `handleOpenViewOptio
 ### Side Quests
 
 - iOS polish: give the sheet a bold title and a "Done" button.
+- Android polish: we used the universal Picker in the `<ViewOptionsSheet />`. It doesn't look the greatest, wire up our `<Dropdown />` from the previous module for a cleaner widget!
 
 ## Exercise 3: Android parity - icons & a native carousel
 
@@ -687,8 +688,10 @@ const CAROUSEL_HEIGHT = 220;
 const PREFERRED_ITEM_WIDTH = 220; // focused item; the carousel sizes peeking items around it
 
 export function GameGallery({ games }: { games: Game[] }) {
+  const carouselKey = games.map((game) => game.id).join(",")
+
   return (
-    <Host style={{ height: CAROUSEL_HEIGHT } satisfies ViewStyle}>
+    <Host key={carouselKey} style={{ height: CAROUSEL_HEIGHT } satisfies ViewStyle}>
       <HorizontalMultiBrowseCarousel
         preferredItemWidth={PREFERRED_ITEM_WIDTH}
         itemSpacing={8}
