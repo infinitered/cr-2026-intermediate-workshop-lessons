@@ -1,10 +1,16 @@
 # Intermediate Workshop - Chain React 2026
 
-## Slides and contact
+Workshop exercises for the Chain React 2026 Intermediate Workshop.
+
+## Slides
+
+## Contact
 - [Find me on Expo Discord](https://chat.expo.dev) - I'm "keith".
 - [Keith on X](https://twitter.com/llamaluvr)
+- [https://www.linkedin.com/in/keith-kurak/](LinkedIn)
+- [https://bsky.app/profile/keith.bsky.social](Bluesky)
 
-Workshop exercises for the Chain React 2026 Intermediate Workshop.
+Probably best place is LinkedIn or email ... keith [at] expo [dot] dev.
 
 ## How to use this repo
 
